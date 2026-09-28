@@ -52,6 +52,7 @@
 
       public wrt_bgc_diags
       public wrt_bgc
+      public wrt_rst_trc_sed
 
       contains
 
@@ -121,6 +122,9 @@
 #ifdef NHY_FORCING
       call set_frc_data(nc_nhy,nhy,'r')
 #endif /* NHY_FORCING */
+#ifdef FESEDFLUX_FORCING
+      call set_frc_data(nc_fesedflux,fesedflux,'r')
+#endif /* FESEDFLUX_FORCING */
 
 
 #if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
@@ -215,6 +219,18 @@
              call ncwrite(ncid,t_vname(itrc),t_avg(i0:i1,j0:j1,:,itavg),(/1,1,1,record_avg/))
              endif
           enddo
+#if defined(SED_BUCKET)
+          do itrc=1,NT_sed
+             if (wrt_t_sed_avg(itrc)) then
+                if (mynode == 0) then
+                   write(*,'(7x,A,1x,A)')
+     &             'wrt_bgc_tracers :: average, trc_sed = ', t_sed_vname(itrc)
+                endif
+             itavg = NTsed_2_t_avg(itrc)
+             call ncwrite(ncid,t_sed_vname(itrc),t_sed_avg(i0:i1,j0:j1,itavg),(/1,1,record_avg/))
+             endif
+          enddo
+#endif
           if (mynode == 0) then
 !           write(*,'(7x,A,1x,F11.4,2x,A,I7,1x,A,I4,A,I4,1x,A,I3)')
             write(*,'(7x,A,1x,F11.4,2x,A,I7,1x,A,I4)')
@@ -256,6 +272,17 @@
             call ncwrite(ncid,t_vname(itrc),t(i0:i1,j0:j1,:,nnew,itrc),(/1,1,1,record_his/))
             endif
           enddo
+#if defined(SED_BUCKET)
+          do itrc=1,NT_sed
+             if (wrt_t_sed(itrc)) then
+                if (mynode == 0) then
+                   write(*,'(7x,A,1x,A)')
+     &             'wrt_bgc_tracers :: history, trc_sed = ', t_sed_vname(itrc)
+                endif
+             call ncwrite(ncid,t_sed_vname(itrc),t_sed(i0:i1,j0:j1,itrc),(/1,1,record_his/))
+             endif
+          enddo
+#endif
           if (mynode == 0) then
             write(*,'(7x,A,1x,F11.4,2x,A,I7,1x,A,I4)')
      &       'bgc :: wrote history, tdays =', tdays,
@@ -305,7 +332,8 @@
           output_time_dia_avg = 0
           navg_dia_bgc = 0
           ierr=nf90_open(fname_avg,nf90_write,ncid)
-          call ncwrite(ncid,'ocean_time',(/time/),(/record_dia_avg/))
+!          call ncwrite(ncid,'ocean_time',(/time/),(/record_dia_avg/))
+          call ncwrite(ncid,'ocean_time',(/t_avg_bgc/),(/record_dia_avg/))
           do itrc=1,nr_bgc_diag_2d
             if (wrt_bgc_diag_2d(itrc)) then
             idiag = idx_bgc_diag_2d(itrc)
@@ -395,7 +423,7 @@
 
       call def_vars_bgc( ncid,avg )
 
-      ierr = nf90_enddef(ncid)
+      ierr = nf90_close(ncid)
 
       end subroutine create_bgc_file !]
 !----------------------------------------------------------------------
@@ -420,7 +448,7 @@
 
       call def_bgc_diag(ncid,avg)
 
-      ierr = nf90_enddef(ncid)
+      ierr = nf90_close(ncid)
 
       end subroutine create_bgc_dia_file !]
 #endif /* (BEC2_DIAG) || defined (MARBL_DIAGS) */
@@ -448,16 +476,38 @@
              ierr = nf90_put_att(ncid,varid,'units',t_units(itrc))
           endif
         enddo
+#if defined(SED_BUCKET)
+        do itrc=1,NT_sed
+          if (wrt_t_sed_avg(itrc)) then
+             text_lname='avg_'/ /t_sed_lname(itrc)
+             varid = nccreate(ncid,t_sed_vname(itrc),
+     &               (/dn_xr,dn_yr,dn_tm/),(/xi_rho,eta_rho,0/))
+             ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
+             ierr = nf90_put_att(ncid,varid,'units',t_sed_units(itrc))
+          endif
+        enddo
+#endif
       else
         do itrc=iTandS+nt_passive+1,NT
           if (wrt_t(itrc)) then
-             text_lname='avg_'/ /t_lname(itrc)
+             text_lname=t_lname(itrc)
              varid = nccreate(ncid,t_vname(itrc),
      &         (/dn_xr,dn_yr,dn_zr,dn_tm/),(/xi_rho,eta_rho,N,0/))
              ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
              ierr = nf90_put_att(ncid,varid,'units',t_units(itrc))
           endif
         enddo
+#if defined(SED_BUCKET)
+        do itrc=1,NT_sed
+          if (wrt_t_sed(itrc)) then
+             text_lname=t_sed_lname(itrc)
+             varid = nccreate(ncid,t_sed_vname(itrc),
+     &               (/dn_xr,dn_yr,dn_tm/),(/xi_rho,eta_rho,0/))
+             ierr = nf90_put_att(ncid,varid,'long_name',text_lname)
+             ierr = nf90_put_att(ncid,varid,'units',t_sed_units(itrc))
+          endif
+        enddo
+#endif
       endif
 
       end subroutine def_vars_bgc  !]
@@ -488,6 +538,17 @@
      &                               +     t(i0:i1,j0:j1,:,nstp,itrc)*coef     ! CONFIRM NSTP OR NNEW!!!
         endif
       enddo
+
+#if defined(BIOLOGY_BEC2) && defined(SED_BUCKET)
+      do itrc=1,NT_sed
+        if (wrt_t_sed_avg(itrc)) then
+          itavg = NTsed_2_t_avg(itrc)
+          t_sed_avg(i0:i1,j0:j1,itavg) = t_sed_avg(i0:i1,j0:j1,itavg) *(1-coef) +
+     &                                   t_sed(i0:i1,j0:j1,itrc) * coef
+        endif
+      enddo
+
+#endif
 
       end subroutine calc_avg_bgc  !]
 ! ----------------------------------------------------------------------
@@ -561,6 +622,27 @@
 
       end subroutine def_bgc_diag  !]
 #endif /* (BEC2_DIAG) || defined (MARBL_DIAGS) */
+
+! ----------------------------------------------------------------------
+      subroutine wrt_rst_trc_sed(ncid, start)  ![
+      ! write sediment tracers to restart file
+
+      implicit none
+
+      ! inputs
+      integer, intent(in) :: ncid
+      integer,dimension(:),intent(in) :: start
+
+#ifdef SED_BUCKET
+      ! local
+      integer :: itrc
+      do itrc=1,NT_sed
+        call ncwrite(ncid,t_sed_vname(itrc),t_sed(i0:i1,j0:j1,itrc),start)
+      enddo
+#endif
+
+      end subroutine wrt_rst_trc_sed  !]
+
 ! ----------------------------------------------------------------------
       subroutine init_arrays_bgc_frc  ![
       implicit none
@@ -580,6 +662,9 @@
 #endif
 #ifdef NHY_FORCING
       allocate( nc_nhy%vdata( GLOBAL_2D_ARRAY,2) )
+#endif
+#ifdef FESEDFLUX_FORCING
+      allocate( nc_fesedflux%vdata( GLOBAL_2D_ARRAY,2) )
 #endif
 
 #if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC

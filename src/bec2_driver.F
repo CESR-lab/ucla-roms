@@ -69,9 +69,9 @@
      &    PHLO          ! lower bound for ph in solver
      &   ,PHHI          ! upper bound for ph in solver
        real, PARAMETER :: 
-     &    phlo_init = 7.0,  ! low bound for ph for no prev soln
-     &    phhi_init = 9.0,  ! high bound for ph for no prev soln
-     &    del_ph = 0.20     ! delta-ph for prev soln
+     &    phlo_init = 5.0,  ! low bound for ph for no prev soln
+     &    phhi_init =10.0,  ! high bound for ph for no prev soln
+     &    del_ph = 0.80     ! delta-ph for prev soln
 
        real, PARAMETER :: 
      &    a = 8.6e-7       ! a = 0.31 cm/hr s^2/m^2 in (s/m)
@@ -93,7 +93,7 @@
      &    N2SAT_1atm   ! N2 saturation @ 1 atm (mmol/m^3)
 # endif
 
-!     if(mynode==0) write(*,'(7x,A)') 'ecosys_bec2_td:: computing bgc' ! DevinD added
+      if(mynode==0) write(*,'(7x,A)') 'ecosys_bec2_td:: computing bgc' 
 
 # ifndef BULK_FRC
 !
@@ -327,9 +327,9 @@
        END IF
 
 # endif
-    !------------------------------------------------------------------------
-    !   compute O2 flux
-    !------------------------------------------------------------------------
+     !------------------------------------------------------------------------
+     !   compute O2 flux
+     !------------------------------------------------------------------------
 
        IF (lflux_gas_o2) THEN
          call CSCHMIDT_O2(SSTT(istr:iend,jstr:jend),
@@ -376,9 +376,9 @@
          end do  ! j
        END IF
 
-    !------------------------------------------------------------------------
-    !   compute CO2 flux, computing disequilibrium one row at a time
-    !------------------------------------------------------------------------
+     !------------------------------------------------------------------------
+     !   compute CO2 flux, computing disequilibrium one row at a time
+     !------------------------------------------------------------------------
        IF (lflux_gas_co2) THEN
           call CSCHMIDT_CO2(SSTT(istr:iend,jstr:jend),
      &       landmask(istr:iend,jstr:jend),
@@ -472,9 +472,9 @@
 # endif
        ENDIF  ! lflux_gas_co2
 
-    !---------------------------------------------------------------------
-    !   Surface fluxes:
-    !----------------------------------------------------------------------
+     !---------------------------------------------------------------------
+     !   Surface fluxes:
+     !----------------------------------------------------------------------
 
        !     iron fluxes in forcing file are in nmol Fe cm-2 s-1
        !     BEC needs them in mmol Fe m-2 s-1 
@@ -548,8 +548,16 @@
      &             t(istr:iend,jstr:jend,k,nnew,isalt+nt_passive+m)
      &             + dt * DTRACER_MODULE(istr:iend,jstr:jend,k,m)
           enddo 
-
        enddo
+
+# ifdef SED_BUCKET
+       do m=1,NT_sed
+             t_sed(istr:iend,jstr:jend,m) =
+     &             t_sed(istr:iend,jstr:jend,m)
+     &             + dt * DTRACER_SED_MODULE(istr:iend,jstr:jend,m)
+     &             * rmask(istr:iend,jstr:jend)
+       enddo
+# endif
 
 !       call wrt_his_bgc_tracers
 !       call wrt_avg_bgc_tracers
@@ -748,16 +756,16 @@
      &    Nexcrete         ! fixed N excretion
 
 
-    !---------------------------------------------------------------------------
-    !   exit immediately if computations are not to be performed
-    !---------------------------------------------------------------------------
+     !---------------------------------------------------------------------------
+     !   exit immediately if computations are not to be performed
+     !---------------------------------------------------------------------------
 
        IF (.NOT. lsource_sink) RETURN
 
-    !---------------------------------------------------------------------------
-    !   create local copies of model tracers
-    !   treat negative values as zero
-    !---------------------------------------------------------------------------
+     !---------------------------------------------------------------------------
+     !   create local copies of model tracers
+     !   treat negative values as zero
+     !---------------------------------------------------------------------------
        PO4_loc  = MAX(c0, T(istr:iend,j,k,nnew,iPO4))
        NO3_loc  = MAX(c0, T(istr:iend,j,k,nnew,iNO3))
        SiO3_loc = MAX(c0, T(istr:iend,j,k,nnew,iSIO3))
@@ -825,9 +833,9 @@
        endif
 #endif
 
-    !---------------------------------------------------------------------------
-    !   If any phyto box are zero, set others to zeros.
-    !---------------------------------------------------------------------------
+     !---------------------------------------------------------------------------
+     !   If any phyto box are zero, set others to zeros.
+     !---------------------------------------------------------------------------
 
        WHERE (spC_loc == c0 .OR. spChl_loc == c0 .OR. spFe_loc == c0)
           spC_loc = c0
@@ -1269,10 +1277,13 @@
      !    - decrease CaCO3 prod at low temperatures
      !    - increase CaCO3 prod under bloom conditions
      !  Maximum calcification rate is 40% of primary production.
+     !  --> Further explanation : See Moore et al. (2001), paragraph 12 
+     !                                Iglesias-Rodriquez et al., (2002)
      !
      !  explicit CaCO3 Production, parametrized as function of photoC of PFT
      !    think about: temp dependence, f_nut dependence, CaCO3:Corg
      !    ratio (right now set to one)
+     !
      !-----------------------------------------------------------------------
 
           if (imp_calcifier(auto_ind)) then
@@ -2363,7 +2374,7 @@
         POC_gamma     = c0
 
         P_CaCO3_diss  = parm_CaCO3_diss ! diss. length (m)
-        P_CaCO3_gamma = 0.30            ! prod frac -> hard subclass
+        P_CaCO3_gamma = 0.60            ! prod frac -> hard subclass (Moore et al. 2001 uses 60%, previous value was 30%)
         P_CaCO3_mass  = 100.09          ! molecular weight of CaCO3
         P_CaCO3_rho   = 0.05 * P_CaCO3_mass / POC_mass ! QA mass ratio for CaCO3
 
@@ -2474,6 +2485,7 @@
      &   POC_PROD_avail,    ! POC production available for excess POC flux (mmol/m^3/s)
      &   new_QA_dust_def,   ! outgoing deficit in the QA(dust) POC flux
      &   flux, flux_alt,    ! temp variables used to update sinking flux
+     &   flux_in, flux_out, ! temp variables used to update flux in and out sediment
      &   dz_loc, dzr_loc    ! Hz and its inverse at a particular i,j,k location
 
        logical
@@ -2854,12 +2866,17 @@
 
           if (LANDMASK(i,j) .and. (k == 1)) then
 
-             flux = POC_sflux_out(i,j)+POC_hflux_out(i,j) ! mmol C/m^2/s
+             flux_in = POC_sflux_out(i,j)+POC_hflux_out(i,j) ! mmol C/m^2/s
+# ifdef SED_BUCKET
+             flux_out = t_sed(i,j,sed_poc_ind) * t_remin_sed(sed_poc_ind)
+# else
+             flux_out = flux_in
+# endif
 
-             if (flux > c0) then
-               flux_alt = flux*spd ! convert to mmol C/m^2/day
+             if (flux_in > c0) then
+               flux_alt = flux_in*spd ! convert to mmol C/m^2/day
 
-               POC_sed_loss(i,j) = flux * min(0.8, parm_POMbury
+               POC_sed_loss(i,j) = flux_in * min(0.8, parm_POMbury
      &             * (0.013 + 0.53 * flux_alt*flux_alt / (7.0 + flux_alt)**2))
 
             ! set denitr to zero if NO3<=0 in bottom water (to not
@@ -2876,15 +2893,15 @@
 
             ! constrain SED_DENITRIF by what is left to
             ! be remineralized after POC_sed_loss
+!               SED_DENITRIF(i) = dzr_loc * min(flux * (0.06 + 0.19 *
+!     &                 0.99**(O2_loc(i)-NO3_loc(i))),
+!     &                flux-POC_sed_loss(i,j)*denitrif_C_N)
+! Pierre : REF :  Bohlen et al. (GBC, 2012); eq. (10)
+               SED_DENITRIF(i) = dzr_loc * min(flux_in * (0.06 + 0.19 *
+     &                 0.99**(O2_loc(i)-NO3_loc(i))),
+     &                flux_out)
                if (NO3_loc(i) < parm_sed_denitrif_NO3_limit) then
-               SED_DENITRIF(i) = dzr_loc * min(flux * (0.06 + 0.19 *
-     &                 0.99**(O2_loc(i)-NO3_loc(i))),
-     &                flux-POC_sed_loss(i,j)*denitrif_C_N)
                SED_DENITRIF(i) = 1/parm_sed_denitrif_NO3_limit*NO3_loc(i)*SED_DENITRIF(i)
-               else
-               SED_DENITRIF(i) = dzr_loc * min(flux * (0.06 + 0.19 *
-     &                 0.99**(O2_loc(i)-NO3_loc(i))),
-     &                flux-POC_sed_loss(i,j)*denitrif_C_N)
                endif
 
 #ifdef BEC2_DIAG
@@ -2894,26 +2911,36 @@
        endif
        if (wrt_bec2_diag_2d(fluxtosed_idx_t)) then
           idiag = idx_bec2_diag_2d(fluxtosed_idx_t)
-          bec2_diag_2d(i,j,idiag) = flux
+          bec2_diag_2d(i,j,idiag) = flux_in
        endif
        if (wrt_bec2_diag_2d(pocsedloss_idx_t)) then
           idiag = idx_bec2_diag_2d(pocsedloss_idx_t)
           bec2_diag_2d(i,j,idiag) = POC_sed_loss(i,j)
        endif
+       if (wrt_bec2_diag_2d(fluxfromsed_idx_t)) then
+          idiag = idx_bec2_diag_2d(fluxfromsed_idx_t)
+          bec2_diag_2d(i,j,idiag) = flux_out
+       endif
 #endif
 
-               flux_alt = flux*1e-4*spd*365.0 ! convert to mmol C/cm^2/year
+!               flux_alt = flux*1e-4*spd*365.0 ! convert to mmol C/cm^2/year
+!               OTHER_REMIN(i) = dzr_loc
+!     &             * min(min(0.1 + flux_alt,0.5) * (flux - POC_sed_loss(i,j)),
+!     &                   (flux - POC_sed_loss(i,j) - (SED_DENITRIF(i)*dz_loc*denitrif_C_N)))
+               flux_alt = flux_in*1e-4*spd*365.0 ! convert to mmol C/cm^2/year
                OTHER_REMIN(i) = dzr_loc
-     &             * min(min(0.1 + flux_alt,0.5) * (flux - POC_sed_loss(i,j)),
-     &                   (flux - POC_sed_loss(i,j) - (SED_DENITRIF(i)*dz_loc*denitrif_C_N)))
-
+     &             * min(min(0.1 + flux_alt,0.5) * flux_out ,
+     &                   (flux_out - (SED_DENITRIF(i)*dz_loc*denitrif_C_N)))
      !----------------------------------------------------------------------------------
      !              if bottom water O2 is depleted, assume all remin is denitrif + other               
      !----------------------------------------------------------------------------------
-
+!               if (O2_loc(i) < c1) then
+!                 OTHER_REMIN(i) = dzr_loc *
+!     &                (flux - POC_sed_loss(i,j) - (SED_DENITRIF(i)*dz_loc*denitrif_C_N))
+!              endif
                if (O2_loc(i) < c1) then
                  OTHER_REMIN(i) = dzr_loc *
-     &                (flux - POC_sed_loss(i,j) - (SED_DENITRIF(i)*dz_loc*denitrif_C_N))
+     &                (flux_out - (SED_DENITRIF(i)*dz_loc*denitrif_C_N))
               endif
 
 #ifdef BEC2_DIAG
@@ -2925,7 +2952,8 @@
 
             ! FESEDFLUX parametrization from Dale 2015
             ! carbon oxidation rate in mmol m-2 s-1 
-            flux_oxidated(i) = flux - POC_sed_loss(i,j)
+!            flux_oxidated(i) = flux - POC_sed_loss(i,j)
+            flux_oxidated(i) = flux_out
 
             ! convert from mmol m-2 s-1 to mmol m-2 d-1
             flux_oxidated(i) = flux_oxidated(i) * 86400  ! day2sec=86400
@@ -2949,41 +2977,77 @@
 # endif
             endif  ! flux > c0
 
-            flux = P_SiO2_sflux_out(i,j)+P_SiO2_hflux_out(i,j)
-            flux_alt = flux*spd ! convert to mmol/m^2/day
+             flux_in = P_SiO2_sflux_out(i,j)+P_SiO2_hflux_out(i,j)
+# ifdef SED_BUCKET
+             flux_out = t_sed(i,j,sed_si_ind) * t_remin_sed(sed_si_ind)
+# else
+             flux_out = flux_in
+# endif
+
+!            flux_alt = flux_in*spd ! convert to mmol/m^2/day
+!            ! first compute burial efficiency, then compute loss to sediments
+!            if (flux_alt > c1) then
+!               P_SiO2_sed_loss(i,j) = 0.3 * flux_alt - 0.06
+!            else
+!               P_SiO2_sed_loss(i,j) = 0.04
+!            endif
+!             P_SiO2_sed_loss(i,j) = flux_in * parm_BSIbury * P_SiO2_sed_loss(i,j)
+!! PD patch for SiO2 buried flux, maximum burial efficiency of 80% of the incoming flux to sediment 
+!            P_SiO2_sed_loss(i,j) = flux_in * min(0.8 , parm_BSIbury * P_SiO2_sed_loss(i,j))
+
+! PD : Bsi preservation in sediments = 0.3*sinkBsi - 0.06 mmol/m2/day
+! in Ragueneau et al. 2000 (doi:10.1016/S0921-8181(00)00052-7, figure 12)
+            flux_alt = flux_in*spd ! convert to mmol/m^2/day
             ! first compute burial efficiency, then compute loss to sediments
             if (flux_alt > c1) then
-               P_SiO2_sed_loss(i,j) = 0.3 * flux_alt - 0.06
+               P_SiO2_sed_loss(i,j) = 0.30 * flux_alt - 0.06
             else
-               P_SiO2_sed_loss(i,j) = 0.04
+               P_SiO2_sed_loss(i,j) = 0.04 * flux_alt ! + 0.01 (remove 0.01 to respect the flux_in >= flux_buried condition) 
             endif
-            P_SiO2_sed_loss(i,j) = flux * parm_BSIbury * P_SiO2_sed_loss(i,j)
+            P_SiO2_sed_loss(i,j) = P_SiO2_sed_loss(i,j)/spd ! convert to mmol/m^2/s
+
 
 # ifdef BEC2_DIAG
         if (wrt_bec2_diag_2d(sio2fluxtosed_idx_t)) then
            idiag = idx_bec2_diag_2d(sio2fluxtosed_idx_t)
-           bec2_diag_2d(i,j,idiag) = flux
+           bec2_diag_2d(i,j,idiag) = flux_in
         endif
         if (wrt_bec2_diag_2d(sio2sedloss_idx_t)) then
            idiag = idx_bec2_diag_2d(sio2sedloss_idx_t)
            bec2_diag_2d(i,j,idiag) = P_SiO2_sed_loss(i,j)
         endif
+        if (wrt_bec2_diag_2d(sio2fluxfromsed_idx_t)) then
+           idiag = idx_bec2_diag_2d(sio2fluxfromsed_idx_t)
+           bec2_diag_2d(i,j,idiag) = flux_out
+        endif
 # endif
 
-            flux = c0  ! set flux back to zero
-            if (-z_w(i,j,k) < 3300.0) then
-               flux = P_CaCO3_sflux_out(i,j) + P_CaCO3_hflux_out(i,j)
-               P_CaCO3_sed_loss(i,j) = flux
-            endif
+!            flux = c0  ! set flux back to zero
+!            if (-z_w(i,j,k) < 3300.0) then
+!             flux = P_CaCO3_sflux_out(i,j) + P_CaCO3_hflux_out(i,j)
+!             P_CaCO3_sed_loss(i,j) = flux
+!            endif
+
+             flux_in = P_CaCO3_sflux_out(i,j) + P_CaCO3_hflux_out(i,j)
+# ifdef SED_BUCKET
+             flux_out = t_sed(i,j,sed_caco3_ind) * t_remin_sed(sed_caco3_ind)
+# else
+             flux_out = flux_in
+# endif
+             P_CaCO3_sed_loss(i,j) = flux_in
 
 # ifdef BEC2_DIAG
         if (wrt_bec2_diag_2d(caco3fluxtosed_idx_t)) then
            idiag = idx_bec2_diag_2d(caco3fluxtosed_idx_t)
-           bec2_diag_2d(i,j,idiag) = flux
+           bec2_diag_2d(i,j,idiag) = flux_in
         endif
         if (wrt_bec2_diag_2d(caco3sedloss_idx_t)) then
            idiag = idx_bec2_diag_2d(caco3sedloss_idx_t)
            bec2_diag_2d(i,j,idiag) = P_CaCO3_sed_loss(i,j)
+        endif
+        if (wrt_bec2_diag_2d(caco3fluxfromsed_idx_t)) then
+           idiag = idx_bec2_diag_2d(caco3fluxfromsed_idx_t)
+           bec2_diag_2d(i,j,idiag) = flux_out
         endif
 # endif
 
@@ -2992,22 +3056,43 @@
      !  flux used to hold sinking fluxes before update.
      !----------------------------------------------------------------------------------
 
-            flux = P_CaCO3_sflux_out(i,j) + P_CaCO3_hflux_out(i,j)
-            if (flux > c0) then
+            flux_in = P_CaCO3_sflux_out(i,j) + P_CaCO3_hflux_out(i,j)
+# ifdef SED_BUCKET
+            flux_out = t_sed(i,j,sed_caco3_ind) * t_remin_sed(sed_caco3_ind)
+            DTRACER_SED_MODULE(i,j,sed_caco3_ind) = flux_in
+     &         - P_CaCO3_sed_loss(i,j) - flux_out
+# else
+            flux_out = flux_in - P_CaCO3_sed_loss(i,j)
+# endif
+            if (flux_out > c0) then
                P_CaCO3_remin(i,j) = P_CaCO3_remin(i,j)
-     &             + ((flux - P_CaCO3_sed_loss(i,j)) * dzr_loc)
+     &             + (flux_out * dzr_loc)
             endif
 
-            flux = P_SiO2_sflux_out(i,j) + P_SiO2_hflux_out(i,j)
-            if (flux > c0) then
+            flux_in = P_SiO2_sflux_out(i,j) + P_SiO2_hflux_out(i,j)
+# ifdef SED_BUCKET
+            flux_out = t_sed(i,j,sed_si_ind) * t_remin_sed(sed_si_ind)
+            DTRACER_SED_MODULE(i,j,sed_si_ind) = flux_in
+     &         - P_SiO2_sed_loss(i,j) - flux_out
+# else
+            flux_out = flux_in - P_SiO2_sed_loss(i,j)
+# endif
+            if (flux_out > c0) then
                P_SiO2_remin(i,j) = P_SiO2_remin(i,j)
-     &             + ((flux - P_SiO2_sed_loss(i,j)) * dzr_loc)
+     &             + (flux_out * dzr_loc)
             endif
 
-            flux = POC_sflux_out(i,j) + POC_hflux_out(i,j)
-            if (flux > c0) then
+            flux_in = POC_sflux_out(i,j) + POC_hflux_out(i,j)
+# ifdef SED_BUCKET
+            flux_out = t_sed(i,j,sed_poc_ind) * t_remin_sed(sed_poc_ind)
+            DTRACER_SED_MODULE(i,j,sed_poc_ind) = flux_in
+     &         - POC_sed_loss(i,j) - flux_out
+# else
+            flux_out = flux_in - POC_sed_loss(i,j)
+# endif
+            if (flux_out > c0) then
                POC_remin(i,j) = POC_remin(i,j)
-     &             + ((flux - POC_sed_loss(i,j)) * dzr_loc)
+     &             + (flux_out * dzr_loc)
             endif
 
      !-----------------------------------------------------------------------
@@ -3060,30 +3145,30 @@
      &           + (FESEDFLUX(i) * dzr_loc)
          end if  ! LANDMASK(i,j) .and. (k == 1)
 
-       end do  ! i = istr, iend
-
 # ifdef BEC2_DIAG
         if (wrt_bec2_diag_3d(pironremin_idx_t)) then
            idiag = idx_bec2_diag_3d(pironremin_idx_t)
-           bec2_diag_3d(istr:iend,j,k,idiag) = P_Iron_remin(istr:iend,j)*dz_loc
+           bec2_diag_3d(i,j,k,idiag) = P_Iron_remin(i,j)*dz_loc
         endif
         if (wrt_bec2_diag_3d(caco3remin_idx_t)) then
            idiag = idx_bec2_diag_3d(caco3remin_idx_t)
-           bec2_diag_3d(istr:iend,j,k,idiag) = P_CaCO3_remin(istr:iend,j)*dz_loc
+           bec2_diag_3d(i,j,k,idiag) = P_CaCO3_remin(i,j)*dz_loc
         endif
         if (wrt_bec2_diag_3d(sio2remin_idx_t)) then
            idiag = idx_bec2_diag_3d(sio2remin_idx_t)
-           bec2_diag_3d(istr:iend,j,k,idiag) = P_SiO2_remin(istr:iend,j)*dz_loc
+           bec2_diag_3d(i,j,k,idiag) = P_SiO2_remin(i,j)*dz_loc
         endif
         if (wrt_bec2_diag_3d(pocremin_idx_t)) then
            idiag = idx_bec2_diag_3d(pocremin_idx_t)
-           bec2_diag_3d(istr:iend,j,k,idiag) = POC_remin(istr:iend,j)*dz_loc
+           bec2_diag_3d(i,j,k,idiag) = POC_remin(i,j)*dz_loc
         endif
         if (wrt_bec2_diag_3d(dustremin_idx_t)) then
            idiag = idx_bec2_diag_3d(dustremin_idx_t)
-           bec2_diag_3d(istr:iend,j,k,idiag) = dust_remin(istr:iend)*dz_loc
+           bec2_diag_3d(i,j,k,idiag) = dust_remin(i)*dz_loc
         endif
 # endif
+
+       end do  ! i = istr, iend
 
        return
        end subroutine compute_particulate_terms
@@ -3745,13 +3830,23 @@
      &    xco2,          ! atmospheric CO2 (atm)
      &    htotal,        ! free concentration of H ion
      &    x1, x2,        ! bounds on htotal for solver
-     &    s_loc          ! local copy of salinity with fixed negative values
+     &    s_loc,         ! local copy of salinity with fixed negative values
+     &    t_loc,         ! local copy of temperat with fixed negative values
+     &    dic_loc,       ! local copy of dic with fixed negative
+     &    ta_loc,        ! local copy of ta with fixed negative values
+     &    pt_loc,        ! local copy of pt with fixed negative values
+     &    sit_loc        ! local copy of sit with fixed negative values
 
      !---------------------------------------------------------------------------
      !   check for existence of ocean points
      !---------------------------------------------------------------------------
 
        s_loc = max(1.00e-4,s)
+       t_loc = max(-1.8,t) ! max(0.10,t)
+       dic_loc = max(s_loc/35.0*1944.0,dic_in) ! max(0.01e-1,dic_in)
+       ta_loc  = max(s_loc/35.0*2225.0,ta_in)  ! max(0.01e-1,ta_in)
+       pt_loc  = max(0.01e-3,pt_in)
+       sit_loc = max(0.01e-3,sit_in)
 
        IF (COUNT(mask) == 0) THEN
          ph          = c0
@@ -3776,10 +3871,10 @@
 
         DO i = istr,iend
           IF (mask(i)) THEN
-            dic(i)  = dic_in(i)  * vol_to_mass
-            ta(i)   = ta_in(i)   * vol_to_mass
-            pt(i)   = pt_in(i)   * vol_to_mass
-            sit(i)  = sit_in(i)  * vol_to_mass
+            dic(i)  = dic_loc(i)  * vol_to_mass
+            ta(i)   = ta_loc(i)   * vol_to_mass
+            pt(i)   = pt_loc(i)   * vol_to_mass
+            sit(i)  = sit_loc(i)  * vol_to_mass
            xco2(i) = xco2_in(i) * 1e-6
 
           !---------------------------------------------------------------------
@@ -3794,7 +3889,7 @@
           !   Derive simple terms used more than once
           !---------------------------------------------------------------------
 
-            tk       = T0_Kelvin + t(i)
+            tk       = T0_Kelvin + t_loc(i)
             tk100    = tk * 1e-2
             tk1002   = tk100 * tk100
             invtk    = c1 / tk
