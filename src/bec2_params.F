@@ -261,7 +261,7 @@
      &   denitrif_C_N, denitrif_NO3_C, denitrif_NO2_C, denitrif_N2O_C
        parameter(
      &   Q             = 0.137,   !N/C ratio (mmol/mmol) of phyto & zoo
-     &   Qp_zoo_pom    = 0.00855, !P/C ratio (mmol/mmol) zoo & pom
+     &   Qp_zoo_pom    = 1.0/117.0, !P/C ratio (mmol/mmol) zoo & pom (Redfield C/P=117)
      &   Qfe_zoo       = 3.0e-6,  !zooplankton fe/C ratio
      &   gQsi_0        = 0.137,   !initial Si/C ratio
      &   gQsi_max      = 0.8,     !max Si/C ratio
@@ -445,7 +445,10 @@
       kNO2 = (/ 0.0300, 0.24, 0.8 /)        ! mmol N/m3  ! 0.0
       kNH4 = (/ 0.0025, 0.02, 0.0667 /)     ! mmol N/m3  ! 0.01 0.04  0.8
       kSiO3 = (/ 0.0, 0.6, 0.0 /)           ! mmol SiO3/m3
-      Qp = (/ 0.008547, 0.008547, 0.008547 /)
+      ! Qp must equal Qp_zoo_pom exactly for bec2_driver to use the standard
+      ! P routing (it tests Qp == Qp_zoo_pom); set a different value only for
+      ! an autotroph with a genuinely different P/C ratio.
+      Qp = (/ Qp_zoo_pom, Qp_zoo_pom, Qp_zoo_pom /)
       gQfe_0 = (/ 33.0e-6, 33.0e-6, 66.0e-6 /)
       gQfe_min = (/ 2.7e-6, 2.7e-6, 6.0e-6 /)
       alphaPI = (/ 0.4*dps, 0.31*dps, 0.33*dps /)  ! Chl. specific initial slope of P_I curve (GD98) (mmol C m^2/(mg Chl W sec))
