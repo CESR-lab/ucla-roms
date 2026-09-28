@@ -1,7 +1,7 @@
 #include "cppdefs.opt"
 #ifdef LMD_KPP
 
-      subroutine swr_frac (tile)
+      subroutine lmd_swr_frac (tile)
 
       use param
       use private_scratch

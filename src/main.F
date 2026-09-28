@@ -192,7 +192,7 @@ CR      write(*,*) ' -8' MYID
       do tile=my_tile_range            ! Create three-dimensional
         call set_depth(tile)           ! S-coordinate system, which
 # ifdef LMD_KPP
-        call swr_frac(tile)            ! may be needed by ana_init.
+        call lmd_swr_frac(tile)        ! may be needed by ana_init.
 # endif
       enddo
 C$OMP BARRIER                          ! Here it is assumed that free
@@ -432,6 +432,10 @@ CR      write(*,*)  ' -2' MYID
       call step3d_uv2(0)   
 
       call omega
+# ifdef LMD_KPP
+      ! Update the shortwave penetration fractions with the new Hz
+      call lmd_swr_frac(0)
+# endif
       call step3d_t(0)
 # if defined TS_DIF2 || defined TS_DIF4
       call t3dmix
