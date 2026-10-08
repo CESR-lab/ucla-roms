@@ -53,6 +53,9 @@
 #ifdef NHY_FORCING
       use bgc_forces                  , only: nhy
 #endif      
+#ifdef FESEDFLUX_FORCING
+      use bgc_forces                  , only: fesedflux
+#endif
       use ocean_vars                  , only: Hz, z_r, z_w
       
 !     ----------------------------------------------------------------------
@@ -90,7 +93,7 @@
 #ifdef MARBL_DIAGS      
 !     Keeping count of diagnostics:
 !     These are the amount to allocate in ROMS...
-      integer, parameter, public :: nr_marbl_diag_2d = 179
+      integer, parameter, public :: nr_marbl_diag_2d = 180
       integer, parameter, public :: nr_marbl_diag_3d = 164
 !     ... and these are the amount supplied by MARBL (to be counted up)
       integer, public :: diag_cnt_sf_2d  ! Number of MARBL 2D surface flux diagnostic vars
@@ -1471,6 +1474,9 @@
 ! iron flux
             if (fesedflux_ind > 0) then
                MARBL_instance%interior_tendency_forcings(fesedflux_ind)%field_1d(1,:)=0.
+#ifdef FESEDFLUX_FORCING
+               MARBL_instance%interior_tendency_forcings(fesedflux_ind)%field_1d(1,nz)=fesedflux(i,j)
+#endif
                if (print_values) call if_test_print(fesedflux_ind,i,j)
             end if
 

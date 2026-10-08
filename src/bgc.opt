@@ -39,13 +39,16 @@
 #endif      
 #endif            
 #if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
-      type (ncforce) :: nc_swrad_avg   = ncforce(vname='swrad_davg', tname='srf_davg_time' )
+      type (ncforce) :: nc_swrad_avg   = ncforce(vname='swrad_LFreq', tname='rad_time_LFreq' )
 #endif
 #ifdef NOX_FORCING
       type (ncforce) :: nc_nox        = ncforce(vname='nox', tname='nox_time' )
 #endif
 #ifdef NHY_FORCING
       type (ncforce) :: nc_nhy        = ncforce(vname='nhy', tname='nhy_time' )
+#endif
+#ifdef FESEDFLUX_FORCING
+      type (ncforce) :: nc_fesedflux        = ncforce(vname='fesedflux', tname='fesedflux_time' )
 #endif
 
 !#include "bgc_tracers.h"

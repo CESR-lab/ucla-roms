@@ -79,6 +79,23 @@ CSDISTRIBUTE_RESHAPE  noxg(BLOCK_PATTERN,*) BLOCK_CLAUSE
 # endif
 #endif /* NOX_FORCING */
 
+#ifdef FESEDFLUX_FORCING
+! FESEDFLUX flux
+! --- ----
+      real,allocatable,dimension(:,:) :: fesedflux
+CSDISTRIBUTE_RESHAPE  fesedflux(BLOCK_PATTERN,*) BLOCK_CLAUSE
+# if defined FESEDFLUX_DATA || defined ALL_DATA
+# ifndef SET_SMTH
+#  undef FESEDFLUX_DATA
+# endif
+      real,allocatable,dimension(:,:,:) :: fesedfluxg
+CSDISTRIBUTE_RESHAPE  fesedfluxg(BLOCK_PATTERN,*) BLOCK_CLAUSE
+      real    :: fesedflux_cycle, fesedflux_time(2)
+      integer :: fesedflux_ncycle,  fesedflux_rec, itfesedflux, ntfesedflux,
+     &           fesedflux_file_id, fesedflux_id, fesedflux_tid
+# endif
+#endif /* FESEDFLUX_FORCING */
+
 #if defined BIOLOGY_BEC || defined BIOLOGY_BEC2 || defined(MARBL)
 ! dust flux
 ! ---- ----
@@ -148,6 +165,16 @@ CSDISTRIBUTE_RESHAPE  irong(BLOCK_PATTERN,*) BLOCK_CLAUSE
       allocate( noxg(GLOBAL_2D_ARRAY,2) )
 # endif
 #endif /* NOX_FORCING */
+
+#ifdef FESEDFLUX_FORCING
+      allocate( fesedflux(GLOBAL_2D_ARRAY) )
+# if defined FESEDFLUX_DATA || defined ALL_DATA
+# ifndef SET_SMTH
+#  undef FESEDFLUX_DATA
+# endif
+      allocate( fesedfluxg(GLOBAL_2D_ARRAY,2) )
+# endif
+#endif /* FESEDFLUX_FORCING */
 
 #if defined BIOLOGY_BEC || defined BIOLOGY_BEC2 || defined MARBL
       allocate( dust(GLOBAL_2D_ARRAY) )
