@@ -2753,7 +2753,7 @@
 
              POC_sflux_out(i,j) = POC_sflux_in(i,j) * decay_POC_E +
      &          POC_PROD_avail *((c1 - decay_POC_E) *
-     &          poc_diss)
+     &          poc_diss_loc)
 
      !-----------------------------------------------------------------------
      !  Compute remineralization terms. It is assumed that there is no
