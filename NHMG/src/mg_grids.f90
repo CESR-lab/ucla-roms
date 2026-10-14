@@ -64,7 +64,7 @@ module mg_grids
      real(kind=rp),dimension(:,:,:),pointer :: Arx   => null() ! Cell face surface at u-points
      real(kind=rp),dimension(:,:,:),pointer :: Ary   => null() ! Cell face surface at v-points
      real(kind=rp),dimension(:,:)  ,pointer :: Arz   => null() !
-     real(kind=rp),dimension(:,:)  ,pointer :: beta  => null() !
+     real(kind=rp),dimension(:,:)  ,pointer :: beta  => null() ! (reduced bottom: read by the model's w_metric only; removed with it)
      real(kind=rp),dimension(:,:)  ,pointer :: gamu  => null() !
      real(kind=rp),dimension(:,:)  ,pointer :: gamv  => null() !
      real(kind=rp),dimension(:,:,:),pointer :: zxdy  => null() ! Slopes in x-direction defined at rho-points * dy
@@ -252,12 +252,10 @@ contains
        allocate(grid(lev)%p(nz,0:ny+1,0:nx+1))
        allocate(grid(lev)%b(nz,0:ny+1,0:nx+1))
        allocate(grid(lev)%r(nz,0:ny+1,0:nx+1))
-       if (ghost_bottom) then
-          allocate(grid(lev)%pg(0:ny+1,0:nx+1));  grid(lev)%pg = 0._rp
-          allocate(grid(lev)%bg(0:ny+1,0:nx+1));  grid(lev)%bg = 0._rp
-          allocate(grid(lev)%rg(0:ny+1,0:nx+1));  grid(lev)%rg = 0._rp
-          allocate(grid(lev)%cAg(6,0:ny+1,0:nx+1));  grid(lev)%cAg = 0._rp
-       endif
+       allocate(grid(lev)%pg(0:ny+1,0:nx+1));  grid(lev)%pg = 0._rp
+       allocate(grid(lev)%bg(0:ny+1,0:nx+1));  grid(lev)%bg = 0._rp
+       allocate(grid(lev)%rg(0:ny+1,0:nx+1));  grid(lev)%rg = 0._rp
+       allocate(grid(lev)%cAg(6,0:ny+1,0:nx+1));  grid(lev)%cAg = 0._rp
     enddo
 
     do lev=1,nlevs !
@@ -533,7 +531,7 @@ contains
     nl2 = 1+floor( log( nzg * one / nzmin * one) / log(two) ) +1
     ! ghost bottom: every level keeps its ghost row below a column of
     ! at least two cells (no 2D levels)
-    if (ghost_bottom) nl2 = nl2 - 1
+    nl2 = nl2 - 1
 
     nlevs = min(nl1,nl2) ! The number of grid levels in the MG.
 
@@ -772,7 +770,7 @@ contains
           nx = nx/ngx ! ngx is 1 or 2 (and generally 2)
           ny = ny/ngy ! ngy is 1 or 2 (and generally 2)
           allocate(grid(lev)%dummy3(nz,0:ny+1,0:nx+1))
-          if (ghost_bottom) allocate(grid(lev)%dummy2(0:ny+1,0:nx+1))
+          allocate(grid(lev)%dummy2(0:ny+1,0:nx+1))
 
           allocate(grid(lev)%gatherbuffer2D(0:ny+1,0:nx+1,0:ngx-1,0:ngy-1))
           allocate(grid(lev)%gatherbuffer (1:nz  ,0:ny+1,0:nx+1,0:ngx-1,0:ngy-1))

@@ -239,24 +239,22 @@ contains
           enddo
        enddo
     enddo
-    if (ghost_bottom) then
-       ! ghost row: the bottom face's flux balance, W*(0) + dW(0) = 0;
-       ! cell 1 sees the same provisional flux through its bottom face
+    ! ghost row: the bottom face's flux balance, W*(0) + dW(0) = 0;
+    ! cell 1 sees the same provisional flux through its bottom face
+    do i = 1,nx
+       do j = 1,ny
+          grid(1)%bg(j,i) = wa(i,j,1)
+       enddo
+    enddo
+    if (present(wb)) then
        do i = 1,nx
           do j = 1,ny
-             grid(1)%bg(j,i) = wa(i,j,1)
+             grid(1)%bg(j,i)  = grid(1)%bg(j,i)  + wb(i,j)
+             grid(1)%b(1,j,i) = grid(1)%b(1,j,i) - wb(i,j)
           enddo
        enddo
-       if (present(wb)) then
-          do i = 1,nx
-             do j = 1,ny
-                grid(1)%bg(j,i)  = grid(1)%bg(j,i)  + wb(i,j)
-                grid(1)%b(1,j,i) = grid(1)%b(1,j,i) - wb(i,j)
-             enddo
-          enddo
-       endif
-       call fill_halo(1,grid(1)%bg)
     endif
+    call fill_halo(1,grid(1)%bg)
     if (have_mask) then
        ! land columns are identity rows: p = 0 there (the model masks the
        ! provisional u,v on land faces before the solve; w in land is
@@ -264,7 +262,7 @@ contains
        do i = 1,nx
           do j = 1,ny
              if (rmsk(j,i) == zero) grid(1)%b(:,j,i) = zero
-             if (rmsk(j,i) == zero .and. ghost_bottom) grid(1)%bg(j,i) = zero
+             if (rmsk(j,i) == zero) grid(1)%bg(j,i) = zero
           enddo
        enddo
     endif

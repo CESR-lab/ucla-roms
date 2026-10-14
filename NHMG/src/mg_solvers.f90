@@ -52,7 +52,7 @@ contains
     nite=0
 
     res0 = sum(grid(1)%b(1:nz,1:ny,1:nx)**2)
-    if (ghost_bottom) res0 = res0 + sum(grid(1)%bg(1:ny,1:nx)**2)
+    res0 = res0 + sum(grid(1)%bg(1:ny,1:nx)**2)
     call global_sum(1,res0,bnorm)
     bnorm = sqrt(bnorm)
     fac = sqrt(1./(nx*ny*nz))
@@ -122,13 +122,11 @@ contains
              enddo
           enddo
        enddo
-       if (ghost_bottom) then
-          do i = lbound(grid(lev+1)%bg,2), ubound(grid(lev+1)%bg,2)
-             do j = lbound(grid(lev+1)%bg,1), ubound(grid(lev+1)%bg,1)
-                grid(lev+1)%rg(j,i) = grid(lev+1)%bg(j,i)
-             enddo
+       do i = lbound(grid(lev+1)%bg,2), ubound(grid(lev+1)%bg,2)
+          do j = lbound(grid(lev+1)%bg,1), ubound(grid(lev+1)%bg,1)
+             grid(lev+1)%rg(j,i) = grid(lev+1)%bg(j,i)
           enddo
-       endif
+       enddo
     enddo
 
     call relax(maxlev, ns_coarsest)

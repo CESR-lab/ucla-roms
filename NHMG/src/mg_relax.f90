@@ -143,15 +143,9 @@ contains
        do i = 1, nx
           do j = 1, ny
 
-             if (ghost_bottom) then
 
-                call relax_3D_8_heart_g(lev,p,b,cA,i,j,nz)
+             call relax_3D_8_heart_g(lev,p,b,cA,i,j,nz)
 
-             else
-
-                call relax_3D_8_heart(p,b,cA,i,j,nz)
-
-             endif
 
           enddo ! j
        enddo    ! i
@@ -186,20 +180,14 @@ contains
           do i = 1, nx
              do j = 1+mod(i+rb,2),ny,2
 
-                if (ghost_bottom) then
 
-                   call relax_3D_8_heart_g(lev,p,b,cA,i,j,nz)
+                call relax_3D_8_heart_g(lev,p,b,cA,i,j,nz)
 
-                else
-
-                   call relax_3D_8_heart(p,b,cA,i,j,nz)
-
-                endif
 
              enddo
           enddo
           call fill_halo(lev,p)
-          if (ghost_bottom) call fill_halo(lev,grid(lev)%pg)
+          call fill_halo(lev,grid(lev)%pg)
        enddo
     enddo
 
@@ -230,21 +218,14 @@ contains
              do i = 1 + mod(fc1-1,2), nx, 2
                 do j = 1 + mod(fc2-1,2), ny, 2
 
-                   if (ghost_bottom) then
 
-                      call relax_3D_8_heart_g(lev,p,b,cA,i,j,nz)
+                   call relax_3D_8_heart_g(lev,p,b,cA,i,j,nz)
 
-                   else
-
-                      call relax_3D_8_heart(p,b,cA,i,j,nz)
-
-                   endif
 
                 enddo
              enddo
              call fill_halo(lev,p)
-             if (ghost_bottom) call fill_halo(lev,grid(lev)%pg)
-          if (ghost_bottom) call fill_halo(lev,grid(lev)%pg)
+             call fill_halo(lev,grid(lev)%pg)
           enddo
        enddo
     enddo
@@ -254,75 +235,10 @@ contains
   end subroutine relax_3D_8_FC
 
   !----------------------------------------
-  subroutine relax_3D_8_heart(p,b,cA,i,j,nz)
-
-    real(kind=rp),dimension(:,:,:)  , pointer, intent(inout):: p
-    real(kind=rp),dimension(:,:,:)  , pointer, intent(in)   :: b
-    real(kind=rp),dimension(:,:,:,:), pointer, intent(in)   :: cA
-
-    integer(kind=ip)                          , intent(in)  :: i
-    integer(kind=ip)                          , intent(in)  :: j
-    integer(kind=ip)                          , intent(in)  :: nz
-
-    !- Local -!
-    integer(kind=ip) :: k
-    real(kind=rp), dimension(nz) :: rhs, d, ud
-
-    ! Coefficients are stored in order of diagonals
-    ! cA(1,:,:,:)      -> p(k,j,i)
-    ! cA(2,:,:,:)      -> p(k-1,j,i)
-    ! cA(3,:,:,:)      -> p(k+1,j-1,i)
-    ! cA(4,:,:,:)      -> p(k,j-1,i)
-    ! cA(5,:,:,:)      -> p(k-1,j-1,i)
-    ! cA(6,:,:,:)      -> p(k+1,j,i-1)
-    ! cA(7,:,:,:)      -> p(k,j,i-1)
-    ! cA(8,:,:,:)      -> p(k-1,j,i-1)
-
-    k=1 !lower level
-    rhs(k) = b(k,j,i)                                              &
-         - cA(3,k,j,i)*p(k+1,j-1,i)                                &
-         - cA(4,k,j,i)*p(k  ,j-1,i) - cA(4,k  ,j+1,i)*p(k  ,j+1,i) &
-         - cA(5,k+1,j+1,i)*p(k+1,j+1,i)                            &
-         - cA(6,k,j,i)*p(k+1,j,i-1)                                &
-         - cA(7,k,j,i)*p(k  ,j,i-1) - cA(7,k  ,j,i+1)*p(k  ,j,i+1) &
-         - cA(8,k+1,j,i+1)*p(k+1,j,i+1)                            &
-!!  Special cross terms 
-         - cA(5,k,j,i)*p(k,j+1,i-1) - cA(5,k,j-1,i+1)*p(k,j-1,i+1) &
-         - cA(8,k,j,i)*p(k,j-1,i-1) - cA(8,k,j+1,i+1)*p(k,j+1,i+1)
-
-    d(k)   = cA(1,k,j,i)
-    ud(k)  = cA(2,k+1,j,i)
-
-    do k = 2,nz-1 !interior levels
-       rhs(k) = b(k,j,i) &
-            - cA(3,k,j,i)*p(k+1,j-1,i) - cA(3,k-1,j+1,i)*p(k-1,j+1,i) &
-            - cA(4,k,j,i)*p(k  ,j-1,i) - cA(4,k  ,j+1,i)*p(k  ,j+1,i) &
-            - cA(5,k,j,i)*p(k-1,j-1,i) - cA(5,k+1,j+1,i)*p(k+1,j+1,i) &
-            - cA(6,k,j,i)*p(k+1,j,i-1) - cA(6,k-1,j,i+1)*p(k-1,j,i+1) &
-            - cA(7,k,j,i)*p(k  ,j,i-1) - cA(7,k  ,j,i+1)*p(k  ,j,i+1) &
-            - cA(8,k,j,i)*p(k-1,j,i-1) - cA(8,k+1,j,i+1)*p(k+1,j,i+1) 
-       d(k)   = cA(1,k,j,i)
-       ud(k)  = cA(2,k+1,j,i)
-    enddo
-
-    k=nz !upper level
-    rhs(k) = b(k,j,i)                                              &
-         - cA(3,k-1,j+1,i)*p(k-1,j+1,i) &
-         - cA(4,k,j,i)*p(k  ,j-1,i) - cA(4,k  ,j+1,i)*p(k  ,j+1,i) &
-         - cA(5,k,j,i)*p(k-1,j-1,i)                                &
-         - cA(6,k-1,j,i+1)*p(k-1,j,i+1) &
-         - cA(7,k,j,i)*p(k  ,j,i-1) - cA(7,k  ,j,i+1)*p(k  ,j,i+1) &
-         - cA(8,k,j,i)*p(k-1,j,i-1) 
-    d(k)   = cA(1,k,j,i)
-
-
-    call tridiag(nz,d,ud,rhs,p(:,j,i)) ! solve 1D tridiagonal system
-
-  end subroutine relax_3D_8_heart
 
   !----------------------------------------
   subroutine relax_3D_8_heart_g(lev,p,b,cA,i,j,nz)
-    ! ghost-bottom twin of relax_3D_8_heart: the column holds the ghost
+    ! line relaxation of one column: the column holds the ghost
     ! row (index 0) below the nz cells.  The ghost couples to its own
     ! cell 1 through cA(2,1) and to the four neighbouring cells 1 through
     ! cAg(3..6); the cell-1 row couples to the four neighbouring ghosts
@@ -450,15 +366,9 @@ contains
 
     else
 
-       if (ghost_bottom) then
-          call compute_residual_3D_8_g(lev,res,p,b,r,cA,nx,ny,nz,half,   &
-               grid(lev)%neighb(4)==MPI_PROC_NULL, grid(lev)%neighb(2)==MPI_PROC_NULL, &
-               grid(lev)%neighb(1)==MPI_PROC_NULL, grid(lev)%neighb(3)==MPI_PROC_NULL)
-       else
-       call compute_residual_3D_8(res,p,b,r,cA,nx,ny,nz,half,          &
+       call compute_residual_3D_8_g(lev,res,p,b,r,cA,nx,ny,nz,half,   &
             grid(lev)%neighb(4)==MPI_PROC_NULL, grid(lev)%neighb(2)==MPI_PROC_NULL, &
             grid(lev)%neighb(1)==MPI_PROC_NULL, grid(lev)%neighb(3)==MPI_PROC_NULL)
-       endif
     end if
 
     ! no halo fill of r: the restriction reads the interior only and the
@@ -510,100 +420,10 @@ contains
   end subroutine compute_residual_2D_5
 
   !----------------------------------------
-  subroutine compute_residual_3D_8(res,p,b,r,cA,nx,ny,nz,half,west,east,south,north)
-
-    real(kind=rp)                            , intent(out)  :: res
-    real(kind=rp),dimension(:,:,:)  , pointer, intent(inout):: p
-    real(kind=rp),dimension(:,:,:)  , pointer, intent(in)   :: b
-    real(kind=rp),dimension(:,:,:)  , pointer, intent(inout)   :: r
-    real(kind=rp),dimension(:,:,:,:), pointer, intent(in)   :: cA
-    integer(kind=ip)                        , intent(in)   :: nx, ny, nz
-    logical                                  , intent(in)   :: half
-    logical                                  , intent(in)   :: west,east,south,north
-    ! half: p was just relaxed by relax_3D_8_RB, whose second colour
-    ! (i+j odd) solves each column exactly with the first colour fixed:
-    ! those columns have zero residual except at k = 1, where the bottom
-    ! cross terms couple same-colour columns updated in the same half
-    ! sweep, and except next to a physical wall (west..north: this rank's
-    ! walls), where the mirrored halo (coarse levels) changes with the
-    ! column itself.  Elsewhere only the k = 1 row is evaluated there
-    ! (about half a pass).
-
-    ! Coefficients are stored in order of diagonals
-    ! cA(1,:,:,:)      -> p(k,j,i)
-    ! cA(2,:,:,:)      -> p(k-1,j,i)
-    ! cA(3,:,:,:)      -> p(k+1,j-1,i)
-    ! cA(4,:,:,:)      -> p(k,j-1,i)
-    ! cA(5,:,:,:)      -> p(k-1,j-1,i)
-    ! cA(6,:,:,:)      -> p(k+1,j,i-1)
-    ! cA(7,:,:,:)      -> p(k,j,i-1)
-    ! cA(8,:,:,:)      -> p(k-1,j,i-1)
-
-    integer(kind=ip)           :: i,j,k
-
-    res = zero
-
-    do i = 1,nx
-       do j = 1,ny
-
-          k=1 !lower level
-          r(k,j,i) = b(k,j,i)                                           &
-               - cA(1,k,j,i)*p(k,j,i)                                   &
-               - cA(2,k+1,j,i)*p(k+1,j,i)                               &
-               - cA(3,k,j,i)*p(k+1,j-1,i)                               &
-               - cA(4,k,j,i)*p(k  ,j-1,i) - cA(4,k  ,j+1,i)*p(k  ,j+1,i)&
-               - cA(5,k+1,j+1,i)*p(k+1,j+1,i)                           &
-               - cA(6,k,j,i)*p(k+1,j,i-1)                               &
-               - cA(7,k,j,i)*p(k  ,j,i-1) - cA(7,k  ,j,i+1)*p(k  ,j,i+1)&
-               - cA(8,k+1,j,i+1)*p(k+1,j,i+1)                           &
-!!  Special cross terms 
-               - cA(5,k,j,i)*p(k,j+1,i-1) - cA(5,k,j-1,i+1)*p(k,j-1,i+1)&
-               - cA(8,k,j,i)*p(k,j-1,i-1) - cA(8,k,j+1,i+1)*p(k,j+1,i+1)
-
-          res = res+r(k,j,i)*r(k,j,i)
-
-          if (half .and. mod(i+j,2) == 1 .and. .not. (         &
-               (west .and. i==1) .or. (east .and. i==nx) .or.  &
-               (south .and. j==1) .or. (north .and. j==ny) )) then
-             r(2:nz,j,i) = zero
-             cycle
-          endif
-
-          do k = 2,nz-1 !interior levels
-             r(k,j,i) = b(k,j,i)                                           &
-                  - cA(1,k,j,i)*p(k,j,i)                                   &
-                  - cA(2,k,j,i)*p(k-1,j,i)   - cA(2,k+1,j,i)*p(k+1,j,i)    &
-                  - cA(3,k,j,i)*p(k+1,j-1,i) - cA(3,k-1,j+1,i)*p(k-1,j+1,i)&
-                  - cA(4,k,j,i)*p(k  ,j-1,i) - cA(4,k  ,j+1,i)*p(k  ,j+1,i)&
-                  - cA(5,k,j,i)*p(k-1,j-1,i) - cA(5,k+1,j+1,i)*p(k+1,j+1,i)&
-                  - cA(6,k,j,i)*p(k+1,j,i-1) - cA(6,k-1,j,i+1)*p(k-1,j,i+1)&
-                  - cA(7,k,j,i)*p(k  ,j,i-1) - cA(7,k  ,j,i+1)*p(k  ,j,i+1)&
-                  - cA(8,k,j,i)*p(k-1,j,i-1) - cA(8,k+1,j,i+1)*p(k+1,j,i+1)
-
-             res = res+r(k,j,i)*r(k,j,i)
-          enddo
-
-          k=nz !upper level
-          r(k,j,i) = b(k,j,i)                                           &
-               - cA(1,k,j,i)*p(k,j,i)                                   &
-               - cA(2,k,j,i)*p(k-1,j,i)                                 &
-               - cA(3,k-1,j+1,i)*p(k-1,j+1,i)                           &
-               - cA(4,k,j,i)*p(k  ,j-1,i) - cA(4,k  ,j+1,i)*p(k  ,j+1,i)&
-               - cA(5,k,j,i)*p(k-1,j-1,i)                               &
-               - cA(6,k-1,j,i+1)*p(k-1,j,i+1)                           &
-               - cA(7,k,j,i)*p(k  ,j,i-1) - cA(7,k  ,j,i+1)*p(k  ,j,i+1)&
-               - cA(8,k,j,i)*p(k-1,j,i-1)
-
-          res = res+r(k,j,i)*r(k,j,i)
-
-       enddo
-    enddo
-
-  end subroutine compute_residual_3D_8
 
   !----------------------------------------
   subroutine compute_residual_3D_8_g(lev,res,p,b,r,cA,nx,ny,nz,half,west,east,south,north)
-    ! ghost-bottom twin of compute_residual_3D_8: the k=1 rows couple to
+    ! residual of the 15-point operator: the k=1 rows couple to
     ! the ghost rows instead of the bottom xy pairs, and the ghost rows
     ! (grid%rg) are part of the residual.  After the RB line sweep the
     ! second-colour columns are exact in every row, ghost included (no

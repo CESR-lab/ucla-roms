@@ -65,23 +65,21 @@ contains
 
     grid(lev+1)%p = zero
 
-    if (ghost_bottom) then
-       ! ghost rows: 2D restriction (sum of the four fine rows)
-       if (grid(lev+1)%gather == 1) then
-          b2 => grid(lev+1)%dummy2
-       else
-          b2 => grid(lev+1)%bg
-       endif
-       r2 => grid(lev)%rg
-       call fine2coarse_ghost(r2,b2,nx,ny)
-       if (grid(lev+1)%gather == 1) then
-          r2 => grid(lev+1)%dummy2
-          b2 => grid(lev+1)%bg
-          call gather(lev+1,r2,b2)
-       endif
-       call fill_halo(lev+1,grid(lev+1)%bg)
-       grid(lev+1)%pg = zero
+    ! ghost rows: 2D restriction (sum of the four fine rows)
+    if (grid(lev+1)%gather == 1) then
+       b2 => grid(lev+1)%dummy2
+    else
+       b2 => grid(lev+1)%bg
     endif
+    r2 => grid(lev)%rg
+    call fine2coarse_ghost(r2,b2,nx,ny)
+    if (grid(lev+1)%gather == 1) then
+       r2 => grid(lev+1)%dummy2
+       b2 => grid(lev+1)%bg
+       call gather(lev+1,r2,b2)
+    endif
+    call fill_halo(lev+1,grid(lev+1)%bg)
+    grid(lev+1)%pg = zero
 
   end subroutine fine2coarse
 
@@ -202,23 +200,21 @@ contains
        enddo
     enddo
 
-    if (ghost_bottom) then
-       ! ghost rows: bilinear 2D prolongation of the coarse ghost pressure
-       pc2 => grid(lev+1)%pg
-       if (grid(lev+1)%gather == 1) then
-          rf2 => grid(lev+1)%dummy2
-          call split_2D(lev+1,pc2,rf2)
-          pc2 => grid(lev+1)%dummy2
-       endif
-       rf2 => grid(lev)%rg
-       call coarse2fine_ghost(rf2,pc2,nxc,nyc)
-       call fill_halo(lev,grid(lev)%rg)
-       do i = lbound(grid(lev)%pg,2), ubound(grid(lev)%pg,2)
-          do j = lbound(grid(lev)%pg,1), ubound(grid(lev)%pg,1)
-             grid(lev)%pg(j,i) = grid(lev)%pg(j,i) + grid(lev)%rg(j,i)
-          enddo
-       enddo
+    ! ghost rows: bilinear 2D prolongation of the coarse ghost pressure
+    pc2 => grid(lev+1)%pg
+    if (grid(lev+1)%gather == 1) then
+       rf2 => grid(lev+1)%dummy2
+       call split_2D(lev+1,pc2,rf2)
+       pc2 => grid(lev+1)%dummy2
     endif
+    rf2 => grid(lev)%rg
+    call coarse2fine_ghost(rf2,pc2,nxc,nyc)
+    call fill_halo(lev,grid(lev)%rg)
+    do i = lbound(grid(lev)%pg,2), ubound(grid(lev)%pg,2)
+       do j = lbound(grid(lev)%pg,1), ubound(grid(lev)%pg,1)
+          grid(lev)%pg(j,i) = grid(lev)%pg(j,i) + grid(lev)%rg(j,i)
+       enddo
+    enddo
 
   end subroutine coarse2fine
 
