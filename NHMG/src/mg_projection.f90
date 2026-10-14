@@ -148,8 +148,7 @@ contains
     real(kind=rp), dimension(:,:,:,:), pointer :: cA
 
     integer(kind=ip) :: dirichlet_flag 
-    real(kind=rp)    :: sig, fj, fjm, fi, fim
-    
+    real(kind=rp)    :: sig, fj, fjm, fi, fim, dm, dn, sfi
 
     if (surface_neumann) then
        dirichlet_flag = 0
@@ -159,6 +158,8 @@ contains
 
     if (allocated(obcrob_u)) call set_obc_leak()
     if (have_mask) call set_level_masks()
+    call stage('face masks')
+    call set_face_masks()
 
     do lev = 1, nlevs
 
@@ -200,6 +201,44 @@ contains
        !- lower level -!
        !---------------!
        k = 1
+       if (ghost_bottom) then
+          ! unreduced T~ (ghost bottom pressure level): the k=1 rows are
+          ! the mirror of the Dirichlet surface rows, with the ghost value
+          ! pg in place of the zero surface pressure.  Derived from the
+          ! ghost branch of correction_uvw: bottom face = kinematic row
+          ! with the half-cell weights 1/2, k=1 u,v rows = interior form
+          ! with the factor-two half-cell term.  Relative to the reduced
+          ! rows the gamma factor is gone and the slope term of the
+          ! lateral coupling flips sign; the k-1 slots (2,5,8) couple to
+          ! the ghost rows.  Checked against the operator by the
+          ! extraction on the first call.
+          do i = 1,nx
+             do j = 1,ny+1
+                ! couples with k+1,j-1
+                cA(3,k,j,i) = qrt * ( zydx(k+1,j,i) + zydx(k,j-1,i) )
+                ! couples with j-1
+                cA(4,k,j,i) = Ary(k,j,i) / dyv(j,i) + qrt * ( zydx(k,j-1,i) - zydx(k,j,i) )
+                ! couples with the ghost row at j-1
+                cA(5,k,j,i) = - hlf * zydx(k,j-1,i)
+             enddo
+          enddo
+          do i = 1,nx+1
+             do j = 1,ny
+                ! couples with k+1,i-1
+                cA(6,k,j,i) = qrt * ( zxdy(k+1,j,i) + zxdy(k,j,i-1) )
+                ! couples with i-1
+                cA(7,k,j,i) = Arx(k,j,i) / dxu(j,i) + qrt * ( zxdy(k,j,i-1) - zxdy(k,j,i) )
+                ! couples with the ghost row at i-1
+                cA(8,k,j,i) = - hlf * zxdy(k,j,i-1)
+             enddo
+          enddo
+          do i = 1,nx
+             do j = 1,ny
+                ! couples with the ghost row below
+                cA(2,k,j,i) = Arz(j,i) / dzw(k,j,i) * alpha(k,j,i)
+             enddo
+          enddo
+       else
        do i = 1,nx
           do j = 1,ny+1
              ! couples with k+1,j-1
@@ -233,6 +272,7 @@ contains
              cA(8,k,j,i) = - beta(j,i-1) - beta(j-1,i)
           enddo
        enddo
+       endif
 
        !-------------------!
        !- interior levels -!
@@ -325,12 +365,24 @@ contains
           do j = 1,ny
 
              k = 1 !lower level
+             if (ghost_bottom) then
+                ! mirror of the surface diagonal: full vertical coupling
+                ! to the ghost row through the half cell dzw(1)
+                cA(1,k,j,i) = &
+                     - Arz(j,i) / dzw(k+1,j,i) * hlf * (alpha(k+1,j,i) + alpha(k,j,i)) &
+                     - Arz(j,i) / dzw(k  ,j,i) * alpha(k,j,i) &
+                     - Arx(k,j,i  )/dxu(j,i  )  &
+                     - Arx(k,j,i+1)/dxu(j,i+1)  &
+                     - Ary(k,j  ,i)/dyv(j  ,i)  &
+                     - Ary(k,j+1,i)/dyv(j+1,i)
+             else
              cA(1,k,j,i) = &
                   - Arz(j,i) / dzw(k+1,j,i) * hlf * (alpha(k+1,j,i) + alpha(k,j,i)) &
                   - Arx(k,j,i  )/dxu(j,i  ) * hlf * (gamu(j,i) + gamu(j  ,i-1)) &
                   - Arx(k,j,i+1)/dxu(j,i+1) * hlf * (gamu(j,i) + gamu(j  ,i+1)) &
                   - Ary(k,j  ,i)/dyv(j  ,i) * hlf * (gamv(j,i) + gamv(j-1,i  )) &
                   - Ary(k,j+1,i)/dyv(j+1,i) * hlf * (gamv(j,i) + gamv(j+1,i  ))
+             endif
 
              do k = 2,nz-1 !interior levels
                 cA(1,k,j,i) = &
@@ -356,6 +408,123 @@ contains
           enddo
        enddo
 
+       if (ghost_bottom) then
+          ! masked faces (walls, open faces, land): the operator is
+          ! -D (M T M) G with M the face masks, so every lateral and
+          ! cross coupling, which goes through one lateral face, carries
+          ! that face's mask.  The slope terms of the vertical couplings
+          ! and of the k=1 and k=nz diagonals cancel between the two
+          ! faces of a cell only when both are open: their residual is
+          ! proportional to the mask jump across the cell.  Open faces
+          ! are masked, with the leak as a separate diagonal term.
+          do i = 1,nx
+             do j = 1,ny+1
+                do k = 1,nz
+                   cA(3,k,j,i) = cA(3,k,j,i) * vmsk(j,i)
+                   cA(4,k,j,i) = cA(4,k,j,i) * vmsk(j,i)
+                   cA(5,k,j,i) = cA(5,k,j,i) * vmsk(j,i)
+                enddo
+             enddo
+          enddo
+          do i = 1,nx+1
+             do j = 1,ny
+                do k = 1,nz
+                   cA(6,k,j,i) = cA(6,k,j,i) * umsk(j,i)
+                   cA(7,k,j,i) = cA(7,k,j,i) * umsk(j,i)
+                   cA(8,k,j,i) = cA(8,k,j,i) * umsk(j,i)
+                enddo
+             enddo
+          enddo
+          do i = 1,nx
+             do j = 1,ny
+                dm = umsk(j,i+1) - umsk(j,i)
+                dn = vmsk(j+1,i) - vmsk(j,i)
+                sfi = sigtop(dzw(nz+1,j,i)) * sfcf(j,i)
+                do k = 1,nz
+                   ! direct couplings of the diagonal through masked faces
+                   cA(1,k,j,i) = cA(1,k,j,i) + (one - umsk(j,i  )) * Arx(k,j,i  )/dxu(j,i  ) &
+                                             + (one - umsk(j,i+1)) * Arx(k,j,i+1)/dxu(j,i+1) &
+                                             + (one - vmsk(j  ,i)) * Ary(k,j  ,i)/dyv(j  ,i) &
+                                             + (one - vmsk(j+1,i)) * Ary(k,j+1,i)/dyv(j+1,i)
+                enddo
+                cA(2,1,j,i) = cA(2,1,j,i) + hlf * ( zxdy(1,j,i)*dm + zydx(1,j,i)*dn )
+                cA(1,1,j,i) = cA(1,1,j,i) - hlf * ( zxdy(1,j,i)*dm + zydx(1,j,i)*dn )
+                do k = 2,nz
+                   cA(2,k,j,i) = cA(2,k,j,i) + qrt * ( (zxdy(k,j,i) - zxdy(k-1,j,i))*dm &
+                                                     + (zydx(k,j,i) - zydx(k-1,j,i))*dn )
+                enddo
+                cA(1,nz,j,i) = cA(1,nz,j,i) + hlf * (two*sfi - one) * ( zxdy(nz,j,i)*dm + zydx(nz,j,i)*dn )
+             enddo
+          enddo
+          if (allocated(obcrob_u)) then
+             ! radiating open faces: du = obcrob*Ar*p(adjacent cell)
+             if (grid(1)%neighb(4) == MPI_PROC_NULL) then
+                do j = 1,ny
+                   do k = 1,nz
+                      cA(1,k,j,1)  = cA(1,k,j,1)  + obcrob_u(j,1)   *Arx(k,j,1)
+                   enddo
+                enddo
+             endif
+             if (grid(1)%neighb(2) == MPI_PROC_NULL) then
+                do j = 1,ny
+                   do k = 1,nz
+                      cA(1,k,j,nx) = cA(1,k,j,nx) - obcrob_u(j,nx+1)*Arx(k,j,nx+1)
+                   enddo
+                enddo
+             endif
+             if (grid(1)%neighb(1) == MPI_PROC_NULL) then
+                do i = 1,nx
+                   do k = 1,nz
+                      cA(1,k,1,i)  = cA(1,k,1,i)  + obcrob_v(1,i)   *Ary(k,1,i)
+                   enddo
+                enddo
+             endif
+             if (grid(1)%neighb(3) == MPI_PROC_NULL) then
+                do i = 1,nx
+                   do k = 1,nz
+                      cA(1,k,ny,i) = cA(1,k,ny,i) - obcrob_v(ny+1,i)*Ary(k,ny+1,i)
+                   enddo
+                enddo
+             endif
+          endif
+       endif
+
+       if (ghost_bottom) then
+          ! ghost rows (bottom pressure level): the kinematic row -dw(1)
+          ! of the unreduced T~, written over the halo as well, since the
+          ! slots read across seams and by the rows next to the east and
+          ! north edges are never halo-filled (a fill would mirror the
+          ! interior couplings into a wall halo)
+          do i = 0,nx+1
+             do j = 0,ny+1
+                grid(lev)%cAg(1,j,i) = - Arz(j,i) / dzw(1,j,i) * alpha(1,j,i)   ! diagonal
+                grid(lev)%cAg(2,j,i) =   Arz(j,i) / dzw(1,j,i) * alpha(1,j,i)   ! p(1,j,i)
+                grid(lev)%cAg(3,j,i) =   hlf * zydx(1,j,i)                      ! p(1,j-1,i)
+                grid(lev)%cAg(4,j,i) = - hlf * zydx(1,j,i)                      ! p(1,j+1,i)
+                grid(lev)%cAg(5,j,i) =   hlf * zxdy(1,j,i)                      ! p(1,j,i-1)
+                grid(lev)%cAg(6,j,i) = - hlf * zxdy(1,j,i)                      ! p(1,j,i+1)
+             enddo
+          enddo
+          ! masked faces, as for the cell rows (the halo slots read
+          ! across seams and walls, cAg(3,ny+1,:) and cAg(5,:,nx+1),
+          ! included; the other halo slots are never read)
+          do i = 0,nx+1
+             do j = 0,ny+1
+                grid(lev)%cAg(3,j,i) = grid(lev)%cAg(3,j,i) * vmsk(j,i)
+                grid(lev)%cAg(5,j,i) = grid(lev)%cAg(5,j,i) * umsk(j,i)
+                if (j <= ny) grid(lev)%cAg(4,j,i) = grid(lev)%cAg(4,j,i) * vmsk(j+1,i)
+                if (i <= nx) grid(lev)%cAg(6,j,i) = grid(lev)%cAg(6,j,i) * umsk(j,i+1)
+             enddo
+          enddo
+          do i = 1,nx
+             do j = 1,ny
+                dm = umsk(j,i+1) - umsk(j,i)
+                dn = vmsk(j+1,i) - vmsk(j,i)
+                grid(lev)%cAg(2,j,i) = grid(lev)%cAg(2,j,i) + hlf * ( zxdy(1,j,i)*dm + zydx(1,j,i)*dn )
+             enddo
+          enddo
+       endif
+
        ! coarse levels: the open-boundary leak (fine grid: in the extracted
        ! stencil through correction_uvw) as a diagonal term per cell; the
        ! cycle diverges when the coarse operators lack it (COOL, 2026-09-09)
@@ -374,31 +543,27 @@ contains
           call write_netcdf(grid(lev)%cA,vname='ca',netcdf_file_name='cA.nc',rank=myrank,iter=lev)
        endif
 
-       ! Fine grid: replace the hand-assembled stencil by the exact
-       ! stencil of the MASKED operator  A = -D (M T M) G, so that the
-       ! no-flux faces of the domain perimeter (and, later, of an
-       ! interior land mask) are represented by zero rows/columns of T
+       ! Fine grid: the stencil of the MASKED operator  A = -D (M T M) G,
+       ! so that the no-flux faces of the domain perimeter and of an
+       ! interior land mask are represented by zero rows/columns of T
        ! instead of a mirrored p.  Mirroring is a zero-flux condition
        ! only for the Arx*px part of the U row; with slope cross terms
        ! it makes the effective operator non-symmetric, which under the
        ! singular Neumann surface condition leaves an irreducible
-       ! residual (LOCK, 2026-09-04).  The stencil is read off 27
-       ! colouring vectors through correction_uvw itself, hence exact by
-       ! construction; the interior is checked against the formulas.
+       ! residual (LOCK, 2026-09-04).  On the first call the stencil is
+       ! read off 27 colouring vectors through correction_uvw itself,
+       ! hence exact by construction, and the formulas are checked
+       ! against it.  Ghost bottom: the formulas above cover the masked
+       ! rows, so a recompute needs no extraction.  Reduced bottom: the
+       ! rows next to masked faces are re-extracted in a band.
        full = .true.
        if (present(first)) full = first
        if (full) call level_check(lev)
        if (lev == 1) then
-          ! ghost bottom: the k=1 and ghost rows have no formulas, so a
-          ! recompute re-extracts the whole fine stencil (27 applications)
-          if (full .or. ghost_bottom) then
-             call stage('face masks')
-             call set_face_masks()
+          if (full) then
              call stage('stencil extraction (27 colours)')
              call assemble_masked_stencil()
-          else
-             ! only the rows next to walls and masked faces differ from
-             ! the formulas
+          elseif (.not.ghost_bottom) then
              call refresh_wall_rows()
           endif
           if (have_mask) call land_rows(1)
@@ -717,7 +882,8 @@ contains
     ! meets each offset exactly once over the 27 colours, so every value
     ! goes straight to its slot: no extra 3D storage (a 27+8 field
     ! scratch was 0.7 GB per rank on a 96x96x256 subdomain, 2026-09-08).
-    ! Checks: agreement with the formulas (interior cells) and the size
+    ! Checks: agreement with the formulas (interior cells; with the ghost
+    ! bottom every row, since the formulas carry the masks) and the size
     ! of entries outside the pattern are taken as running maxima; the
     ! symmetry of the true operator is tested globally with
     ! <y,A x> = <x,A y> on two deterministic vectors.
@@ -737,7 +903,7 @@ contains
     cA => grid(1)%cA
     x  => grid(1)%b;  y  => grid(1)%r        ! free work arrays at init
     if (ghost_bottom) then
-      pg => grid(1)%pg;  cAg => grid(1)%cAg;  cAg = zero
+      pg => grid(1)%pg;  cAg => grid(1)%cAg
       allocate(xg(0:ny+1,0:nx+1), yg(0:ny+1,0:nx+1));  xg = zero;  yg = zero
     endif
     dsym = zero
@@ -810,9 +976,8 @@ contains
                      + dv(k,j+1,i) - dv(k,j,i)     &
                      + dw(k+1,j,i) - dw(k,j,i) )
                 n = stencil_slot(dk,dj,di,k)
-                if (n > 0 .and. .not.(ghost_bottom .and. k==1)) then
+                if (n > 0) then
                   ! the formula value still in the slot is the reference
-                  ! (ghost bottom: the k=1 rows have no formula)
                   if (i>=3 .and. i<=nx-2 .and. j>=3 .and. j<=ny-2 .and. clear(j,i)) then
                     dint = max(dint, abs(v - cA(n,k,j,i)))
                   else
@@ -832,16 +997,13 @@ contains
                   if (mod(m+3,3) == c) dk = m
                 enddo
                 v = -dw(1,j,i)
-                n = 0
-                if (dk==0 .and. dj==0 .and. di==0) n = 1
-                if (dk==1) then
-                  if (dj==0  .and. di==0 ) n = 2
-                  if (dj==-1 .and. di==0 ) n = 3
-                  if (dj==1  .and. di==0 ) n = 4
-                  if (dj==0  .and. di==-1) n = 5
-                  if (dj==0  .and. di==1 ) n = 6
-                endif
+                n = ghost_slot(dk,dj,di)
                 if (n > 0) then
+                  if (i>=3 .and. i<=nx-2 .and. j>=3 .and. j<=ny-2 .and. clear(j,i)) then
+                    dint = max(dint, abs(v - cAg(n,j,i)))
+                  else
+                    dext = max(dext, abs(v - cAg(n,j,i)))
+                  endif
                   cAg(n,j,i) = v
                 else
                   dnul = max(dnul,abs(v))
@@ -972,16 +1134,10 @@ contains
        write(*,'(A,ES9.2,A,ES9.2)') '       symmetry |<y,Ax>-<x,Ay>|/|<y,Ax>| ', &
             abs(syx-sxy)/max(abs(syx),tiny(one)), '   outside 15-point pattern ', gl(3)/amax
     endif
+    if (ghost_bottom) gl(1) = max(gl(1), gl(2))    ! the recompute relies on every row
     if (gl(1)/amax > 1e-10_rp) then
-       if (robin_beta > 0._rp) then
-          ! Robin surface: the hand formulas carry a single-column surface
-          ! factor in the slope terms, the extracted stencil the exact
-          ! two-column one; the fine grid uses the extracted stencil.
-          if (myrank==0) write(*,*) 'assemble_masked_stencil: interior mismatch expected with Robin surface (slope terms)'
-       else
-          if (myrank==0) write(*,*) 'assemble_masked_stencil: interior mismatch -- stopping'
-          call MPI_Abort(MPI_COMM_WORLD,1,ierr)
-       endif
+       if (myrank==0) write(*,*) 'assemble_masked_stencil: formula mismatch -- stopping'
+       call MPI_Abort(MPI_COMM_WORLD,1,ierr)
     endif
 
   contains
@@ -1036,6 +1192,23 @@ contains
     endif
   end function stencil_slot
 
+  function ghost_slot(dk,dj,di) result(n)
+    ! slot (1..6) of a ghost row's storage cAg that holds the coupling to
+    ! the neighbour at offset (dk,dj,di) from the ghost cell (dk=1: the
+    ! k=1 cells); 0 if off-pattern
+    integer(kind=ip), intent(in) :: dk,dj,di
+    integer(kind=ip) :: n
+    n = 0
+    if (dk==0 .and. dj==0 .and. di==0) n = 1
+    if (dk==1) then
+      if (dj==0  .and. di==0 ) n = 2
+      if (dj==-1 .and. di==0 ) n = 3
+      if (dj==1  .and. di==0 ) n = 4
+      if (dj==0  .and. di==-1) n = 5
+      if (dj==0  .and. di==1 ) n = 6
+    endif
+  end function ghost_slot
+
   !-------------------------------------------------------------------------
   subroutine put_entry(cA,nx,ny,nz,v,dk,dj,di,k,j,i)
     ! store the operator value v of row (k,j,i), offset (dk,dj,di):
@@ -1076,7 +1249,8 @@ contains
 
   !-------------------------------------------------------------------------
   subroutine refresh_wall_rows()
-    ! Matrix recompute: the formulas are exact except in the rows of the
+    ! Matrix recompute, reduced bottom (the ghost-bottom formulas carry
+    ! the masks): the formulas are exact except in the rows of the
     ! cells touching a physical wall (masked faces). Re-extract those rows
     ! with the 27 colourings restricted to a band along each wall of this
     ! rank: the operator is applied in the band only, and the colour
