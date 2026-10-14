@@ -15,7 +15,7 @@ module mg_projection
   ! Set by set_face_masks (domain perimeter, non-periodic sides); an
   ! interior land mask can be folded in later through the same arrays.
   ! umsk(j,i): u-face i (west face of cell i);  vmsk(j,i): v-face j.
-  real(kind=rp), dimension(:,:), allocatable :: umsk, vmsk
+  real(kind=rp), dimension(:,:), allocatable, target :: umsk, vmsk
   ! rmsk(j,i): cell mask (1 fluid, 0 land); have_mask: an interior land
   ! mask exists somewhere (global), which switches the coarse operators
   ! to Galerkin aggregation and adds identity rows for land
@@ -149,6 +149,10 @@ contains
 
     integer(kind=ip) :: dirichlet_flag 
     real(kind=rp)    :: sig, fj, fjm, fi, fim, dm, dn, sfi
+    ! face masks of the level: the fine-grid arrays (walls, land) on
+    ! level 1, the walls of the level above it
+    real(kind=rp), dimension(:,:), pointer :: um, vm
+    real(kind=rp), dimension(:,:), allocatable, target :: umw, vmw
 
     if (surface_neumann) then
        dirichlet_flag = 0
@@ -169,8 +173,9 @@ contains
 
        ! coarse operator by Galerkin aggregation of the finer one: always
        ! for a 2D level (nz = 1: the 3D formulas below do not apply to its
-       ! 5-point storage), otherwise on request (coarse_galerkin)
-       if (lev > 1 .and. (coarse_galerkin .or. have_mask .or. nz == 1 .or. ghost_bottom)) then
+       ! 5-point storage) and for an interior land mask (partially open
+       ! coarse faces), otherwise on request (coarse_galerkin)
+       if (lev > 1 .and. (coarse_galerkin .or. have_mask .or. nz == 1)) then
           call set_galerkin(lev)
           if (have_mask) call land_rows(lev)
           full = .true.
@@ -416,36 +421,50 @@ contains
           ! and of the k=1 and k=nz diagonals cancel between the two
           ! faces of a cell only when both are open: their residual is
           ! proportional to the mask jump across the cell.  Open faces
-          ! are masked, with the leak as a separate diagonal term.
+          ! are masked, with the leak as a separate diagonal term.  The
+          ! coarse levels (walls only: whole faces at every level) take
+          ! the same formulas on their coarsened metrics.
+          if (lev == 1) then
+             um => umsk;  vm => vmsk
+          else
+             allocate(umw(0:ny+1,0:nx+1), vmw(0:ny+1,0:nx+1))
+             umw = one;  vmw = one
+             if (grid(lev)%neighb(4) == MPI_PROC_NULL) umw(:,1   ) = zero
+             if (grid(lev)%neighb(2) == MPI_PROC_NULL) umw(:,nx+1) = zero
+             if (grid(lev)%neighb(1) == MPI_PROC_NULL) vmw(1   ,:) = zero
+             if (grid(lev)%neighb(3) == MPI_PROC_NULL) vmw(ny+1,:) = zero
+             um => umw;  vm => vmw
+          endif
           do i = 1,nx
              do j = 1,ny+1
                 do k = 1,nz
-                   cA(3,k,j,i) = cA(3,k,j,i) * vmsk(j,i)
-                   cA(4,k,j,i) = cA(4,k,j,i) * vmsk(j,i)
-                   cA(5,k,j,i) = cA(5,k,j,i) * vmsk(j,i)
+                   cA(3,k,j,i) = cA(3,k,j,i) * vm(j,i)
+                   cA(4,k,j,i) = cA(4,k,j,i) * vm(j,i)
+                   cA(5,k,j,i) = cA(5,k,j,i) * vm(j,i)
                 enddo
              enddo
           enddo
           do i = 1,nx+1
              do j = 1,ny
                 do k = 1,nz
-                   cA(6,k,j,i) = cA(6,k,j,i) * umsk(j,i)
-                   cA(7,k,j,i) = cA(7,k,j,i) * umsk(j,i)
-                   cA(8,k,j,i) = cA(8,k,j,i) * umsk(j,i)
+                   cA(6,k,j,i) = cA(6,k,j,i) * um(j,i)
+                   cA(7,k,j,i) = cA(7,k,j,i) * um(j,i)
+                   cA(8,k,j,i) = cA(8,k,j,i) * um(j,i)
                 enddo
              enddo
           enddo
           do i = 1,nx
              do j = 1,ny
-                dm = umsk(j,i+1) - umsk(j,i)
-                dn = vmsk(j+1,i) - vmsk(j,i)
-                sfi = sigtop(dzw(nz+1,j,i)) * sfcf(j,i)
+                dm = um(j,i+1) - um(j,i)
+                dn = vm(j+1,i) - vm(j,i)
+                sfi = sigtop(dzw(nz+1,j,i))
+                if (lev == 1) sfi = sfi * sfcf(j,i)
                 do k = 1,nz
                    ! direct couplings of the diagonal through masked faces
-                   cA(1,k,j,i) = cA(1,k,j,i) + (one - umsk(j,i  )) * Arx(k,j,i  )/dxu(j,i  ) &
-                                             + (one - umsk(j,i+1)) * Arx(k,j,i+1)/dxu(j,i+1) &
-                                             + (one - vmsk(j  ,i)) * Ary(k,j  ,i)/dyv(j  ,i) &
-                                             + (one - vmsk(j+1,i)) * Ary(k,j+1,i)/dyv(j+1,i)
+                   cA(1,k,j,i) = cA(1,k,j,i) + (one - um(j,i  )) * Arx(k,j,i  )/dxu(j,i  ) &
+                                             + (one - um(j,i+1)) * Arx(k,j,i+1)/dxu(j,i+1) &
+                                             + (one - vm(j  ,i)) * Ary(k,j  ,i)/dyv(j  ,i) &
+                                             + (one - vm(j+1,i)) * Ary(k,j+1,i)/dyv(j+1,i)
                 enddo
                 cA(2,1,j,i) = cA(2,1,j,i) + hlf * ( zxdy(1,j,i)*dm + zydx(1,j,i)*dn )
                 cA(1,1,j,i) = cA(1,1,j,i) - hlf * ( zxdy(1,j,i)*dm + zydx(1,j,i)*dn )
@@ -456,8 +475,9 @@ contains
                 cA(1,nz,j,i) = cA(1,nz,j,i) + hlf * (two*sfi - one) * ( zxdy(nz,j,i)*dm + zydx(nz,j,i)*dn )
              enddo
           enddo
-          if (allocated(obcrob_u)) then
+          if (lev == 1 .and. allocated(obcrob_u)) then
              ! radiating open faces: du = obcrob*Ar*p(adjacent cell)
+             ! (coarse levels: the coarsened leak, below)
              if (grid(1)%neighb(4) == MPI_PROC_NULL) then
                 do j = 1,ny
                    do k = 1,nz
@@ -510,19 +530,20 @@ contains
           ! included; the other halo slots are never read)
           do i = 0,nx+1
              do j = 0,ny+1
-                grid(lev)%cAg(3,j,i) = grid(lev)%cAg(3,j,i) * vmsk(j,i)
-                grid(lev)%cAg(5,j,i) = grid(lev)%cAg(5,j,i) * umsk(j,i)
-                if (j <= ny) grid(lev)%cAg(4,j,i) = grid(lev)%cAg(4,j,i) * vmsk(j+1,i)
-                if (i <= nx) grid(lev)%cAg(6,j,i) = grid(lev)%cAg(6,j,i) * umsk(j,i+1)
+                grid(lev)%cAg(3,j,i) = grid(lev)%cAg(3,j,i) * vm(j,i)
+                grid(lev)%cAg(5,j,i) = grid(lev)%cAg(5,j,i) * um(j,i)
+                if (j <= ny) grid(lev)%cAg(4,j,i) = grid(lev)%cAg(4,j,i) * vm(j+1,i)
+                if (i <= nx) grid(lev)%cAg(6,j,i) = grid(lev)%cAg(6,j,i) * um(j,i+1)
              enddo
           enddo
           do i = 1,nx
              do j = 1,ny
-                dm = umsk(j,i+1) - umsk(j,i)
-                dn = vmsk(j+1,i) - vmsk(j,i)
+                dm = um(j,i+1) - um(j,i)
+                dn = vm(j+1,i) - vm(j,i)
                 grid(lev)%cAg(2,j,i) = grid(lev)%cAg(2,j,i) + hlf * ( zxdy(1,j,i)*dm + zydx(1,j,i)*dn )
              enddo
           enddo
+          if (lev > 1) deallocate(umw, vmw)
        endif
 
        ! coarse levels: the open-boundary leak (fine grid: in the extracted
