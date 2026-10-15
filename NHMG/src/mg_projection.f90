@@ -869,7 +869,7 @@ contains
         enddo
       enddo
     enddo
-    pg = xg;  call fill_halo(1,pg)
+    pg = xg
     call fill_halo(1,p);  dw(1,:,:) = zero;  call correction_uvw()
     syx = zero
     do i = 1,nx
@@ -890,7 +890,7 @@ contains
         enddo
       enddo
     enddo
-    pg = yg;  call fill_halo(1,pg)
+    pg = yg
     call fill_halo(1,p);  dw(1,:,:) = zero;  call correction_uvw()
     sxy = zero
     do i = 1,nx

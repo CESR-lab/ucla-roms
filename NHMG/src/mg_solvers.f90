@@ -122,11 +122,6 @@ contains
              enddo
           enddo
        enddo
-       do i = lbound(grid(lev+1)%bg,2), ubound(grid(lev+1)%bg,2)
-          do j = lbound(grid(lev+1)%bg,1), ubound(grid(lev+1)%bg,1)
-             grid(lev+1)%rg(j,i) = grid(lev+1)%bg(j,i)
-          enddo
-       enddo
     enddo
 
     call relax(maxlev, ns_coarsest)

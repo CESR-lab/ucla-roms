@@ -55,6 +55,12 @@ contains
 
     end if
 
+    ! ghost rows: 2D restriction (sum of the four fine rows) into
+    ! level 0, gathered and halo-filled with the cells
+    b2(0:,0:) => b(0,:,:)
+    r2 => grid(lev)%rg
+    call fine2coarse_ghost(r2,b2,nx,ny)
+
     if (grid(lev+1)%gather == 1) then
        r => grid(lev+1)%dummy3
        b => grid(lev+1)%b
@@ -64,22 +70,6 @@ contains
     call fill_halo(lev+1,grid(lev+1)%b)
 
     grid(lev+1)%p = zero
-
-    ! ghost rows: 2D restriction (sum of the four fine rows)
-    if (grid(lev+1)%gather == 1) then
-       b2 => grid(lev+1)%dummy2
-    else
-       b2 => grid(lev+1)%bg
-    endif
-    r2 => grid(lev)%rg
-    call fine2coarse_ghost(r2,b2,nx,ny)
-    if (grid(lev+1)%gather == 1) then
-       r2 => grid(lev+1)%dummy2
-       b2 => grid(lev+1)%bg
-       call gather(lev+1,r2,b2)
-    endif
-    call fill_halo(lev+1,grid(lev+1)%bg)
-    grid(lev+1)%pg = zero
 
   end subroutine fine2coarse
 
@@ -187,6 +177,12 @@ contains
 
     endif
 
+    ! ghost rows: bilinear 2D prolongation of the coarse ghost pressure
+    ! (level 0 of pc, split with the cells) into level 0 of r
+    pc2(0:,0:) => pc(0,:,:)
+    rf2 => grid(lev)%rg
+    call coarse2fine_ghost(rf2,pc2,nxc,nyc)
+
     call fill_halo(lev,grid(lev)%r)
 
     ! loops: a whole-array expression between pointer arrays builds a
@@ -197,22 +193,6 @@ contains
           do k = lbound(grid(lev)%p,1), ubound(grid(lev)%p,1)
              grid(lev)%p(k,j,i) = grid(lev)%p(k,j,i) + grid(lev)%r(k,j,i)
           enddo
-       enddo
-    enddo
-
-    ! ghost rows: bilinear 2D prolongation of the coarse ghost pressure
-    pc2 => grid(lev+1)%pg
-    if (grid(lev+1)%gather == 1) then
-       rf2 => grid(lev+1)%dummy2
-       call split_2D(lev+1,pc2,rf2)
-       pc2 => grid(lev+1)%dummy2
-    endif
-    rf2 => grid(lev)%rg
-    call coarse2fine_ghost(rf2,pc2,nxc,nyc)
-    call fill_halo(lev,grid(lev)%rg)
-    do i = lbound(grid(lev)%pg,2), ubound(grid(lev)%pg,2)
-       do j = lbound(grid(lev)%pg,1), ubound(grid(lev)%pg,1)
-          grid(lev)%pg(j,i) = grid(lev)%pg(j,i) + grid(lev)%rg(j,i)
        enddo
     enddo
 

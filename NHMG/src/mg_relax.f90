@@ -187,7 +187,6 @@ contains
              enddo
           enddo
           call fill_halo(lev,p)
-          call fill_halo(lev,grid(lev)%pg)
        enddo
     enddo
 
@@ -225,8 +224,7 @@ contains
                 enddo
              enddo
              call fill_halo(lev,p)
-             call fill_halo(lev,grid(lev)%pg)
-          enddo
+             enddo
        enddo
     enddo
 

@@ -85,67 +85,43 @@ contains
   !----------------------------------------
   subroutine gather_3D(lev,x,y)
 
-    ! lev is the level of y, after the gathering
-
-    ! the grid information for x is not available because x does not belong to a grid
-    ! x is a temporary array (see mg_intergrids.f90)
+    ! lev is the level of y, after the gathering; x is the pre-gather
+    ! block (a temporary, no grid information).  The vertical extent is
+    ! taken from x: nz planes (metrics) or nz+1 (p, b, r with the
+    ! ghost row at level 0).  The buffer is flat; a rank's block is
+    ! stored contiguously as (k,j,i).
 
     integer(kind=ip),intent(in) :: lev
     real(kind=rp),dimension(:,:,:),pointer,intent(in) :: x
     real(kind=rp),dimension(:,:,:),pointer,intent(inout) :: y
 
-    integer(kind=ip):: nx,ny,nz
+    integer(kind=ip):: nx,ny,k0,k1,nk
     integer(kind=ip):: ngx,ngy,Ng
-    integer(kind=ip):: i,j,k,l,m,ii,jj
-    integer(kind=ip):: i0,i1
+    integer(kind=ip):: i,j,k,l,m,ii,jj,n
     integer(kind=ip):: ierr
-    real(kind=rp),dimension(:,:,:,:,:),pointer :: buffer
-
-    !  ngx = 1,2 the number of subdomains to be gathered in x
-    !  ngy = 1,2 the number of subdomains to be gathered in y
+    real(kind=rp),dimension(:),pointer :: buffer
 
     ngx = grid(lev)%ngx
     ngy = grid(lev)%ngy
-
-    nx = grid(lev)%nx
-    ny = grid(lev)%ny
-    nz = grid(lev)%nz
-
-    Ng = grid(lev)%Ng
+    nx = grid(lev)%nx / ngx
+    ny = grid(lev)%ny / ngy
+    k0 = lbound(x,1);  k1 = ubound(x,1);  nk = k1-k0+1
+    Ng = nk*(ny+2)*(nx+2)
     buffer => grid(lev)%gatherbuffer
 
     call MPI_ALLGATHER( x, Ng, MPI_DOUBLE_PRECISION, buffer, Ng, MPI_DOUBLE_PRECISION, grid(lev)%localcomm,ierr)
 
-
-    nx = nx / ngx
-    ny = ny / ngy
-
+    ! copy only the inner points of each block into y: the halo of x
+    ! is stale (no fill_halo on the intermediate grid)
     do m=0,ngy-1
-       ! copy only the inner points of x into y because 
-       ! the halo of x is corrupted
-       ! Indeed, x comes from the coarsening
-       ! after which we didn't update the halo
-       ! because fill_halo is not available for the intermediate grid...
-       !
        do l=0,ngx-1
-          !
-          if(l==0)then
-             i0=0
-          else
-             i0=1
-          endif
-          if(l==ngx-1)then
-             i1=nx+1
-          else
-             i1=nx
-          endif
-          !
           ii = 1+l*nx
           do i=1,nx
              jj = 1+m*ny
              do j=1,ny
-                do k=1,nz
-                   y(k,jj,ii) = buffer(k,j,i,l,m)
+                n = (l + ngx*m)*Ng + (i*(ny+2) + j)*nk
+                do k=k0,k1
+                   y(k,jj,ii) = buffer(n + k-k0 + 1)
                 enddo
                 jj=jj+1
              enddo
@@ -192,7 +168,7 @@ contains
        jj = 0+m*ny
        do j= 0,ny+1
 
-          do k=1,nz
+          do k=lbound(x,1),ubound(x,1)
              y(k,j,i) = x(k,jj,ii)
           enddo
           jj=jj+1
@@ -205,28 +181,5 @@ contains
   end subroutine split
 
   !----------------------------------------
-  subroutine split_2D(lev,x,y)
-    ! 2D twin of split (ghost-bottom rows pg on a gathered level)
-    integer(kind=ip),intent(in) :: lev
-    real(kind=rp),dimension(:,:),pointer,intent(in) :: x
-    real(kind=rp),dimension(:,:),pointer,intent(inout) :: y
-    integer(kind=ip):: nx,ny,ngx,ngy,i,j,l,m,ii,jj,key
-    ngx = grid(lev)%ngx
-    ngy = grid(lev)%ngy
-    nx = grid(lev)%nx / ngx
-    ny = grid(lev)%ny / ngy
-    key = grid(lev)%key
-    l = mod(key,2)
-    m = key/2
-    ii = l*nx
-    do i= 0,nx+1
-       jj = 0+m*ny
-       do j= 0,ny+1
-          y(j,i) = x(jj,ii)
-          jj=jj+1
-       enddo
-       ii=ii+1
-    enddo
-  end subroutine split_2D
 
 end module mg_gather

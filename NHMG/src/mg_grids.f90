@@ -27,7 +27,7 @@ module mg_grids
      integer(kind=ip) :: nx,ny,nz                     ! Subdomain dimensions (whithout halo points)
      integer(kind=ip) :: npx, npy                     ! Number of processes
      integer(kind=ip) :: incx, incy                   ! ??
-     integer(kind=ip) :: Ng2D, Ng ,Ngp                ! Size for 2D and 3D arrays (included halo=1)
+     integer(kind=ip) :: Ng2D                         ! size of a 2D array to gather (halo included)
      integer(kind=ip) :: gather                       ! Gathering activated (1) or not (0)
      integer(kind=ip) :: ngx, ngy                     ! Gathering in x and y (is 1 or 2 (and generally 2))
      integer(kind=ip) :: key                          ! Gathering key
@@ -40,7 +40,7 @@ module mg_grids
      real(kind=rp),dimension(:,:,:),pointer :: b => null()    ! Right-hand side
      real(kind=rp),dimension(:,:,:),pointer :: r => null()    ! Residual
      ! bottom ghost pressure level: one row per column
-     real(kind=rp),dimension(:,:)  ,pointer :: pg => null()   ! ghost pressure p(0)
+     real(kind=rp),dimension(:,:)  ,pointer :: pg => null()   ! ghost pressure: level 0 of p
      real(kind=rp),dimension(:,:)  ,pointer :: bg => null()   ! its rhs (provisional bottom flux)
      real(kind=rp),dimension(:,:)  ,pointer :: rg => null()   ! its residual
      real(kind=rp),dimension(:,:,:),pointer :: cAg => null()  ! its row: (6,j,i) = diag, and the
@@ -76,7 +76,7 @@ module mg_grids
      ! Gathering buffers, allocated only if gathering is activated (coarsen grids!)
      real(kind=rp),dimension(:,:,:)    ,pointer :: dummy3 => null()         ! A dummy 3D array for gathering
      real(kind=rp),dimension(:,:,:,:)  ,pointer :: gatherbuffer2D => null() ! 2D
-     real(kind=rp),dimension(:,:,:,:,:),pointer :: gatherbuffer   => null() ! 3D nz
+     real(kind=rp),dimension(:),pointer :: gatherbuffer => null()  ! flat 3D gather buffer
 
      ! croco exchange arrays: resized and reshaped (i,j,k)=>(k,j,i)
      real(kind=rp),dimension(:,:,:)  ,pointer :: du => null()
@@ -243,12 +243,15 @@ contains
        nx = grid(lev)%nx
        ny = grid(lev)%ny
        nz = grid(lev)%nz
-       allocate(grid(lev)%p(nz,0:ny+1,0:nx+1))
-       allocate(grid(lev)%b(nz,0:ny+1,0:nx+1))
-       allocate(grid(lev)%r(nz,0:ny+1,0:nx+1))
-       allocate(grid(lev)%pg(0:ny+1,0:nx+1));  grid(lev)%pg = 0._rp
-       allocate(grid(lev)%bg(0:ny+1,0:nx+1));  grid(lev)%bg = 0._rp
-       allocate(grid(lev)%rg(0:ny+1,0:nx+1));  grid(lev)%rg = 0._rp
+       ! level 0 of p, b, r is the ghost row: one halo exchange and one
+       ! gather carry the cells and the ghost row together
+       allocate(grid(lev)%p(0:nz,0:ny+1,0:nx+1));  grid(lev)%p = 0._rp
+       allocate(grid(lev)%b(0:nz,0:ny+1,0:nx+1));  grid(lev)%b = 0._rp
+       allocate(grid(lev)%r(0:nz,0:ny+1,0:nx+1));  grid(lev)%r = 0._rp
+       ! (bounds remapped: a plain section pointer would start at 1)
+       grid(lev)%pg(0:,0:) => grid(lev)%p(0,:,:)
+       grid(lev)%bg(0:,0:) => grid(lev)%b(0,:,:)
+       grid(lev)%rg(0:,0:) => grid(lev)%r(0,:,:)
        allocate(grid(lev)%cAg(6,0:ny+1,0:nx+1));  grid(lev)%cAg = 0._rp
     enddo
 
@@ -763,16 +766,13 @@ contains
 
           nx = nx/ngx ! ngx is 1 or 2 (and generally 2)
           ny = ny/ngy ! ngy is 1 or 2 (and generally 2)
-          allocate(grid(lev)%dummy3(nz,0:ny+1,0:nx+1))
+          allocate(grid(lev)%dummy3(0:nz,0:ny+1,0:nx+1))
           allocate(grid(lev)%dummy2(0:ny+1,0:nx+1))
 
           allocate(grid(lev)%gatherbuffer2D(0:ny+1,0:nx+1,0:ngx-1,0:ngy-1))
-          allocate(grid(lev)%gatherbuffer (1:nz  ,0:ny+1,0:nx+1,0:ngx-1,0:ngy-1))
+          allocate(grid(lev)%gatherbuffer((nz+1)*(ny+2)*(nx+2)*ngx*ngy))   ! flat: nz or nz+1 planes
 
-          ! number of elements of dummy3
           grid(lev)%Ng2D=(nx+2)*(ny+2)
-          grid(lev)%Ng  =(nx+2)*(ny+2)*nz
-          grid(lev)%Ngp  =(nx+2)*(ny+2)*(nz+1)
 
        endif
 
@@ -819,9 +819,7 @@ contains
           if (associated(grid(lev)%p))              deallocate(grid(lev)%p)
           if (associated(grid(lev)%b))              deallocate(grid(lev)%b)
           if (associated(grid(lev)%r))              deallocate(grid(lev)%r)
-          if (associated(grid(lev)%pg))             deallocate(grid(lev)%pg)
-          if (associated(grid(lev)%bg))             deallocate(grid(lev)%bg)
-          if (associated(grid(lev)%rg))             deallocate(grid(lev)%rg)
+          nullify(grid(lev)%pg, grid(lev)%bg, grid(lev)%rg)
           if (associated(grid(lev)%cAg))            deallocate(grid(lev)%cAg)
           if (associated(grid(lev)%dummy2))         deallocate(grid(lev)%dummy2)
           if (associated(grid(lev)%dx))             deallocate(grid(lev)%dx)
