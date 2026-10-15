@@ -33,7 +33,6 @@
 #ifdef NHMG
       use nhmg
       use mg_grids, mggrid => grid
-      use mg_namelist, only: ghost_bottom
       use mg_tictoc
 #endif
       use surf_flux, only: sustr, svstr
@@ -559,18 +558,13 @@
           enddo
         endif  ! surface_neumann !
 
-        if (ghost_bottom) then      ! provisional bottom flux (step3d_uv1)
-          do j=1,ny
-            do i=1,nx
-              wbot(i,j) = dtau*rw(i,j,0)/(0.5*Hz_fwd(i,j,1))
-            enddo
+        do j=1,ny                   ! provisional bottom flux (step3d_uv1)
+          do i=1,nx
+            wbot(i,j) = dtau*rw(i,j,0)/(0.5*Hz_fwd(i,j,1))
           enddo
-          call nhmg_solve(nx,ny,nz,halo,padd_X,padd_E,
-     &          u(:,:,:,nnew),v(:,:,:,nnew),w(:,:,:,nnew),wbot )
-        else
-          call nhmg_solve(nx,ny,nz,halo,padd_X,padd_E,
-     &          u(:,:,:,nnew),v(:,:,:,nnew),w(:,:,:,nnew) )
-        endif
+        enddo
+        call nhmg_solve(nx,ny,nz,halo,padd_X,padd_E,
+     &        u(:,:,:,nnew),v(:,:,:,nnew),w(:,:,:,nnew),wbot )
 
       dmax = 0
       do k=1,nz

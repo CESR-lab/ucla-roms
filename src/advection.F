@@ -1345,9 +1345,6 @@
 !----------------------------------------------------------------
       subroutine w_vadv_up3(rw,j) ![
 !DIR$ ATTRIBUTES FORCEINLINE :: w_vadv_up3
-# ifdef NHMG
-      use mg_namelist, only: ghost_bottom
-# endif
 
       ! Vertical up3 advection of vertical momentum w in row j
       ! (non-hydrostatic only). Fluxes live at cell centers k
@@ -1394,11 +1391,9 @@
         enddo
       enddo
 # ifdef NHMG
-      if (ghost_bottom) then         ! bottom half-cell (w(0) = 0 is not
-        do i=1,nx                    ! stepped): the flux FC(1) leaves it
-          rw(i,j,0) = rw(i,j,0) -FC(i,1)
-        enddo
-      endif
+      do i=1,nx                      ! bottom half-cell (w(0) = 0 is not
+        rw(i,j,0) = rw(i,j,0) -FC(i,1)   ! stepped): the flux FC(1) leaves it
+      enddo
 # endif
 
       ! flux at surface is zero because it moves with omega.
@@ -1413,9 +1408,6 @@
 !----------------------------------------------------------------
       subroutine w_vadv_c4(rw,j) ![
 !DIR$ ATTRIBUTES FORCEINLINE :: w_vadv_c4
-# ifdef NHMG
-      use mg_namelist, only: ghost_bottom
-# endif
 
       ! Vertical c4 (non-dissipative) advection of vertical momentum
       ! w in row j (non-hydrostatic only). Centered counterpart of
@@ -1455,11 +1447,9 @@
         enddo
       enddo
 # ifdef NHMG
-      if (ghost_bottom) then         ! bottom half-cell (w(0) = 0 is not
-        do i=1,nx                    ! stepped): the flux FC(1) leaves it
-          rw(i,j,0) = rw(i,j,0) -FC(i,1)
-        enddo
-      endif
+      do i=1,nx                      ! bottom half-cell (w(0) = 0 is not
+        rw(i,j,0) = rw(i,j,0) -FC(i,1)   ! stepped): the flux FC(1) leaves it
+      enddo
 # endif
 
       ! flux at surface is zero because it moves with omega.
@@ -1480,7 +1470,6 @@
       ! the kinematic condition); 0 at the bottom with the reduced T,
       ! whose bottom face carries no momentum.
       use mg_grids, only: mggrid => grid
-      use mg_namelist, only: ghost_bottom
 
       ! input
       integer, intent(in) :: it
@@ -1498,11 +1487,7 @@
           enddo
         enddo
       enddo
-      if (ghost_bottom) then
-        tilt(:,:,0) = tilt(:,:,1)    ! cell 1 (before the averaging)
-      else
-        tilt(:,:,0) = 0.
-      endif
+      tilt(:,:,0) = tilt(:,:,1)      ! cell 1 (before the averaging)
       do k=1,nz-1                    ! in place: tilt(k+1) still cell k+1
         do j=0,ny+1
           do i=0,nx+1
@@ -1567,15 +1552,12 @@
       ! gives the metric terms as
       !     metric = adv_c2(tilt) + dzw * [W-row of T](a_u, a_v, 0),
       !     a_u = CU_c2/(dxu*Arx),  a_v = CV_c2/(dyv*Ary),
-      ! with CU_c2, CV_c2 the C2 flux-form advection forces of u and v,
-      ! and the k=1 rows of T (gamma, beta: the eliminated bottom w)
-      ! completing ru, rv.  With the ghost bottom (NHMG ghost_bottom)
-      ! T is the unreduced operator: the k=1 rows are interior rows
-      ! (nothing to complete) and the bottom face is a half-cell
-      ! control volume like the surface one, with its own row rw(0)
-      ! (adv(tilt) and the kinematic row of T); w(0) = 0 is never
-      ! stepped, rw(0) is handed to the projection as a provisional
-      ! bottom flux and removed through the ghost pressure.
+      ! with CU_c2, CV_c2 the C2 flux-form advection forces of u and v.
+      ! The k=1 rows of T are interior rows (ru, rv unchanged) and the
+      ! bottom face is a half-cell control volume like the surface one,
+      ! with its own row rw(0) (adv(tilt) and the kinematic row of T);
+      ! w(0) = 0 is never stepped, rw(0) is handed to the projection as
+      ! a provisional bottom flux and removed through the ghost pressure.
       ! Both pieces use the same C2 operator, so
       ! the transport parts cancel and what remains is the local
       ! source U u.grad(z_x) + V u.grad(z_y): no derivative acts on
@@ -1595,14 +1577,14 @@
       ! Units: ru,rv,rw volume integrated, m^4/s^2.
 
       use mg_grids, only: mggrid => grid
-      use mg_namelist, only: surface_neumann, ghost_bottom
+      use mg_namelist, only: surface_neumann
 
       ! Import/export
       real,dimension(GLOBAL_2D_ARRAY,  nz) :: ru,rv
       real,dimension(GLOBAL_2D_ARRAY,0:nz) :: rw
       ! local
       integer :: i,j,k,k0
-      real    :: cff,Uflxw,Vflxw,dwr,gam,dflag
+      real    :: cff,Uflxw,Vflxw,dwr,dflag
 
       if (.not.uv_adv) return
 
@@ -1701,10 +1683,8 @@
       !-- 4. rw += adv_c2(tilt): horizontal (level-averaged fluxes,
       !      half flux in the surface and bottom half-cells) and
       !      vertical (total flux, none through the bottom face or the
-      !      moving surface); level 0 only with the ghost bottom ------
-      k0 = 1
-      if (ghost_bottom) k0 = 0
-      do k=k0,nz
+      !      moving surface); level 0 is the bottom half-cell ---------
+      do k=0,nz
         do j=1,ny
           do i=1,nx+1
             if (k==0) then
@@ -1744,7 +1724,7 @@
             wrk2(i,j) = cff*0.5*(tilt(i,j,k)+tilt(i,j,k-1))
             if (k>1) then
               rw(i,j,k-1) = rw(i,j,k-1) + wrk1(i,j) - wrk2(i,j)
-            elseif (ghost_bottom) then
+            else
               ! leaves the bottom half-cell; with it the implicit part
               ! of the w flux (C2, explicit here: the kernels give the
               ! bottom row their We flux, vmix_solve_w applies Wi to
@@ -1792,49 +1772,19 @@
           rw(i,j,k) = rw(i,j,k) + dflag*mggrid(1)%dzw(k+1,j,i)*dwr
         enddo
       enddo
-      if (ghost_bottom) then             ! bottom row: the kinematic row
-        k = 1                            ! of the unreduced T, mirror of
-        do j=1,ny                        ! the surface row (NHMG cell 1)
-          do i=1,nx
-            dwr = -0.5*(
-     &         mggrid(1)%zxdy(k,j,i)*( cu2(i  ,j,k)/mggrid(1)%Arx(k,j,i  )
-     &                                +cu2(i+1,j,k)/mggrid(1)%Arx(k,j,i+1) )
-     &        +mggrid(1)%zydx(k,j,i)*( cv2(i,j  ,k)/mggrid(1)%Ary(k,j  ,i)
-     &                                +cv2(i,j+1,k)/mggrid(1)%Ary(k,j+1,i) )
-     &                  )
-            rw(i,j,0) = rw(i,j,0) + mggrid(1)%dzw(1,j,i)*dwr
-          enddo
-        enddo
-        return                           ! k=1 u,v rows are interior rows
-      endif
-
-      !-- 6. bottom rows of u,v: gamma scaling and beta cross terms
-      !      (the k=1 rows of the reduced T applied to a_u,a_v; the
-      !      interior rows leave the advection forces unchanged) ------
-      do j=1,ny
-        do i=1,nx
-          if (i==1 .and. west_bnd) cycle
-          gam = 0.5*( mggrid(1)%gamu(j,i)+mggrid(1)%gamu(j,i-1) )
-          ru(i,j,1) = ru(i,j,1) + (gam-1.)*cu2(i,j,1)
-     &      - mggrid(1)%dxu(j,i)*(
-     &          mggrid(1)%beta(j,i-1)*( cv2(i-1,j  ,1)/mggrid(1)%Ary(1,j  ,i-1)
-     &                                 +cv2(i-1,j+1,1)/mggrid(1)%Ary(1,j+1,i-1) )
-     &         +mggrid(1)%beta(j,i  )*( cv2(i  ,j  ,1)/mggrid(1)%Ary(1,j  ,i  )
-     &                                 +cv2(i  ,j+1,1)/mggrid(1)%Ary(1,j+1,i  ) ) )
+      k = 1                              ! bottom row: the kinematic row
+      do j=1,ny                          ! of T, mirror of the surface
+        do i=1,nx                        ! row (NHMG cell 1)
+          dwr = -0.5*(
+     &       mggrid(1)%zxdy(k,j,i)*( cu2(i  ,j,k)/mggrid(1)%Arx(k,j,i  )
+     &                              +cu2(i+1,j,k)/mggrid(1)%Arx(k,j,i+1) )
+     &      +mggrid(1)%zydx(k,j,i)*( cv2(i,j  ,k)/mggrid(1)%Ary(k,j  ,i)
+     &                              +cv2(i,j+1,k)/mggrid(1)%Ary(k,j+1,i) )
+     &                )
+          rw(i,j,0) = rw(i,j,0) + mggrid(1)%dzw(1,j,i)*dwr
         enddo
       enddo
-      do j=1,ny
-        if (j==1 .and. south_bnd) cycle
-        do i=1,nx
-          gam = 0.5*( mggrid(1)%gamv(j,i)+mggrid(1)%gamv(j-1,i) )
-          rv(i,j,1) = rv(i,j,1) + (gam-1.)*cv2(i,j,1)
-     &      - mggrid(1)%dyv(j,i)*(
-     &          mggrid(1)%beta(j-1,i)*( cu2(i  ,j-1,1)/mggrid(1)%Arx(1,j-1,i  )
-     &                                 +cu2(i+1,j-1,1)/mggrid(1)%Arx(1,j-1,i+1) )
-     &         +mggrid(1)%beta(j  ,i)*( cu2(i  ,j  ,1)/mggrid(1)%Arx(1,j  ,i  )
-     &                                 +cu2(i+1,j  ,1)/mggrid(1)%Arx(1,j  ,i+1) ) )
-        enddo
-      enddo
+      ! (the k=1 u,v rows of T are interior rows: ru, rv unchanged)
 
       end subroutine w_metric !]
 # endif /* NHMG */

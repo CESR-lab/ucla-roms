@@ -31,9 +31,6 @@ contains
     real(kind=rp), dimension(:,:,:), pointer :: Arx,Ary
     real(kind=rp), dimension(:,:,:), pointer :: zydx,zxdy
     real(kind=rp), dimension(:,:,:), pointer :: alpha
-    real(kind=rp), dimension(:,:)  , pointer :: beta
-    real(kind=rp), dimension(:,:)  , pointer :: gamu
-    real(kind=rp), dimension(:,:)  , pointer :: gamv
     real(kind=rp), dimension(:,:)  , pointer :: Arz
 
     integer(kind=ip) :: i,j,k
@@ -143,9 +140,6 @@ contains
        zxdy  => grid(lev)%zxdy
        zydx  => grid(lev)%zydx
        alpha => grid(lev)%alpha
-       beta  => grid(lev)%beta
-       gamu  => grid(lev)%gamu
-       gamv  => grid(lev)%gamv
 
        !! Cell height 
        do i = 0,nx+1
@@ -187,24 +181,6 @@ contains
              enddo
           enddo
        enddo
-
-       do i = 0,nx+1
-          do j = 0,ny+1
-             gamu(j,i) = one - hlf * ( zxdy(1,j,i) / dy(j,i) )**2 / alpha(1,j,i) 
-          enddo
-       enddo
-
-       do i = 0,nx+1
-          do j = 0,ny+1
-             gamv(j,i) = one - hlf * ( zydx(1,j,i) / dx(j,i) )**2 / alpha(1,j,i) 
-          enddo
-       enddo
-
-       do i = 0,nx+1
-          do j = 0,ny+1
-             beta(j,i) = eighth * zxdy(1,j,i)/dy(j,i) * zydx(1,j,i)/dx(j,i) * dz(1,j,i) / alpha(1,j,i)
-          enddo
-       end do
 
        if (netcdf_output) then
           call write_netcdf(grid(lev)%dzw,vname='dzw',netcdf_file_name='dzw.nc',rank=myrank,iter=lev)

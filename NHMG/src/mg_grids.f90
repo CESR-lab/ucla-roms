@@ -64,9 +64,6 @@ module mg_grids
      real(kind=rp),dimension(:,:,:),pointer :: Arx   => null() ! Cell face surface at u-points
      real(kind=rp),dimension(:,:,:),pointer :: Ary   => null() ! Cell face surface at v-points
      real(kind=rp),dimension(:,:)  ,pointer :: Arz   => null() !
-     real(kind=rp),dimension(:,:)  ,pointer :: beta  => null() ! (reduced bottom: read by the model's w_metric only; removed with it)
-     real(kind=rp),dimension(:,:)  ,pointer :: gamu  => null() !
-     real(kind=rp),dimension(:,:)  ,pointer :: gamv  => null() !
      real(kind=rp),dimension(:,:,:),pointer :: zxdy  => null() ! Slopes in x-direction defined at rho-points * dy
      real(kind=rp),dimension(:,:,:),pointer :: zydx  => null() ! Slopes in y-direction defined at rho-points * dx
      real(kind=rp),dimension(:,:,:),pointer :: alpha => null() ! All levels
@@ -226,9 +223,6 @@ contains
        allocate(grid(lev)%Arx( nz  ,0:ny+1,1:nx+1)) ! at u point
        allocate(grid(lev)%Ary( nz  ,1:ny+1,0:nx+1)) ! at v point
        allocate(grid(lev)%Arz(      0:ny+1,0:nx+1)) ! at w point
-       allocate(grid(lev)%beta(     0:ny+1,0:nx+1)) !
-       allocate(grid(lev)%gamu(     0:ny+1,0:nx+1)) !
-       allocate(grid(lev)%gamv(     0:ny+1,0:nx+1)) !
        allocate(grid(lev)%zxdy(nz  ,0:ny+1,0:nx+1)) ! at rho point
        allocate(grid(lev)%zydx(nz  ,0:ny+1,0:nx+1)) ! at rho point
        allocate(grid(lev)%alpha(nz ,0:ny+1,0:nx+1)) ! at rho point
