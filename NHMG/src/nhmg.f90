@@ -219,11 +219,11 @@ contains
     real(kind=rp), dimension(1-hl:nx+hl+pdx,1-hl:ny+hl+pdy,1:nz  ),intent(in) :: ua
     real(kind=rp), dimension(1-hl:nx+hl+pdx,1-hl:ny+hl+pdy,1:nz  ),intent(in) :: va
     real(kind=rp), dimension(1-hl:nx+hl+pdx,1-hl:ny+hl+pdy,1:nz+1),intent(in) :: wa
-    ! ghost bottom: provisional bottom-face flux W*(0) [m^3/s] of the
-    ! predictor (force on the bottom half-cell momentum), removed by the
-    ! projection through the ghost pressure; wa(:,:,1) itself stays the
-    ! model's bottom flux (zero)
-    real(kind=rp), dimension(1-hl:nx+hl+pdx,1-hl:ny+hl+pdy), optional, intent(in) :: wb
+    ! provisional bottom-face flux W*(0) [m^3/s] of the predictor (force
+    ! on the bottom half-cell momentum), removed by the projection
+    ! through the ghost pressure; wa(:,:,1) itself stays the model's
+    ! bottom flux (zero)
+    real(kind=rp), dimension(1-hl:nx+hl+pdx,1-hl:ny+hl+pdy), intent(in) :: wb
 
     integer(kind=ip) :: i,j,k
 
@@ -243,17 +243,10 @@ contains
     ! cell 1 sees the same provisional flux through its bottom face
     do i = 1,nx
        do j = 1,ny
-          grid(1)%bg(j,i) = wa(i,j,1)
+          grid(1)%bg(j,i)  = wa(i,j,1) + wb(i,j)
+          grid(1)%b(1,j,i) = grid(1)%b(1,j,i) - wb(i,j)
        enddo
     enddo
-    if (present(wb)) then
-       do i = 1,nx
-          do j = 1,ny
-             grid(1)%bg(j,i)  = grid(1)%bg(j,i)  + wb(i,j)
-             grid(1)%b(1,j,i) = grid(1)%b(1,j,i) - wb(i,j)
-          enddo
-       enddo
-    endif
     call fill_halo(1,grid(1)%bg)
     if (have_mask) then
        ! land columns are identity rows: p = 0 there (the model masks the

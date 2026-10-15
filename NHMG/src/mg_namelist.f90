@@ -41,10 +41,6 @@ module mg_namelist
                                           !- du = obcrob_u*Arx*p(adjacent cell): a diagonal-only,
                                           !- symmetric leak term. Allocated by the caller (implicit_fs).
 
-  ! bottom ghost pressure level (the only bottom treatment since the
-  ! reduced T was retired, 2026-10-14); kept as a constant until the
-  ! model's reduced branches are removed
-  logical, parameter :: ghost_bottom = .true.
   logical           :: east_west_perio = .false.
   logical           :: north_south_perio = .false.
 

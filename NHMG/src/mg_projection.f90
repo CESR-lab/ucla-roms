@@ -115,7 +115,7 @@ contains
   !-----------------------------------------------------------------------------------
   subroutine set_matrices(first)
 
-    logical, optional, intent(in) :: first   ! full extraction + stage prints
+    logical, optional, intent(in) :: first   ! operator check + stage prints
     logical :: full
 
     ! Define matrix coefficients cA
@@ -204,7 +204,7 @@ contains
        ! correction_uvw: bottom face = kinematic row with the half-cell
        ! weights 1/2, k=1 u,v rows = interior form with the factor-two
        ! half-cell term; the k-1 slots (2,5,8) couple to the ghost rows.
-       ! Checked against the operator by the extraction on the first call.
+       ! Checked against the operator by operator_check on the first call.
        do i = 1,nx
           do j = 1,ny+1
              ! couples with k+1,j-1
@@ -511,18 +511,16 @@ contains
        ! only for the Arx*px part of the U row; with slope cross terms
        ! it makes the effective operator non-symmetric, which under the
        ! singular Neumann surface condition leaves an irreducible
-       ! residual (LOCK, 2026-09-04).  On the first call the stencil is
-       ! read off 27 colouring vectors through correction_uvw itself,
-       ! hence exact by construction, and the formulas are checked
-       ! against it; the formulas cover the masked rows, so a recompute
-       ! needs no extraction.
+       ! residual (LOCK, 2026-09-04).  The formulas cover the masked
+       ! rows; on the first call the matrix is checked against the
+       ! operator as correction_uvw applies it (operator_check).
        full = .true.
        if (present(first)) full = first
        if (full) call level_check(lev)
        if (lev == 1) then
           if (full) then
-             call stage('stencil extraction (27 colours)')
-             call assemble_masked_stencil()
+             call stage('operator check')
+             call operator_check()
           endif
           if (have_mask) call land_rows(1)
        endif
@@ -823,155 +821,33 @@ contains
     enddo
   end subroutine set_obc_leak
 
-  !-------------------------------------------------------------------------
-  subroutine assemble_masked_stencil()
-    ! Read the fine-grid operator M T M G off 27 colouring vectors and
-    ! store it in cA (15-point symmetric storage: 8 slots per cell plus
-    ! the halo slots read by the east, north and south rows).  Each cell
-    ! meets each offset exactly once over the 27 colours, so every value
-    ! goes straight to its slot: no extra 3D storage (a 27+8 field
-    ! scratch was 0.7 GB per rank on a 96x96x256 subdomain, 2026-09-08).
-    ! Checks: agreement with the formulas (interior cells; with the ghost
-    ! bottom every row, since the formulas carry the masks) and the size
-    ! of entries outside the pattern are taken as running maxima; the
-    ! symmetry of the true operator is tested globally with
-    ! <y,A x> = <x,A y> on two deterministic vectors.
 
-    integer(kind=ip) :: nx,ny,nz,i,j,k,a,bb,c,di,dj,dk,m,n,ig,jg,pi,pj
-    integer(kind=ip) :: ierr
-    real(kind=rp), dimension(:,:,:), pointer :: p,du,dv,dw,x,y
-    real(kind=rp), dimension(:,:,:,:), pointer :: cA
-    real(kind=rp) :: dint, dext, dnul, amax, v, gl(4), lc(4), gs(2), ls(2), sxy, syx
-    real(kind=rp) :: dsym, gsym
-    logical, allocatable :: clear(:,:)
-    real(kind=rp), dimension(:,:), pointer :: pg,xg,yg
-    real(kind=rp), dimension(:,:,:), pointer :: cAg
+  !-------------------------------------------------------------------------
+  subroutine operator_check()
+    ! First-call check of the assembled fine-grid matrix against the
+    ! operator it represents, -D (M T M) G as applied by correction_uvw:
+    ! |A y - div(T grad y)| per row type on a deterministic vector y,
+    ! which exposes any formula or halo-slot error that is not
+    ! orthogonal to y, and the symmetry <y,A x> = <x,A y> of the
+    ! operator itself on two vectors.  Stops on a mismatch above 1e-10
+    ! of max|diag|: the recompute relies on every row of the formulas.
+    ! Work arrays: b and r are free at init (y and r alias: y is
+    ! consumed before the residual is formed).
+    use mg_relax, only: compute_residual
+    integer(kind=ip) :: nx,ny,nz,i,j,k,ig,jg,pi,pj,ierr
+    real(kind=rp), dimension(:,:,:), pointer :: p,du,dv,dw,x,y,r
+    real(kind=rp), dimension(:,:),   pointer :: pg
+    real(kind=rp), dimension(:,:), allocatable :: xg,yg
+    real(kind=rp) :: amax,syx,sxy,d,res,l(4),g(4),ls(2),gs(2)
 
     nx = grid(1)%nx;  ny = grid(1)%ny;  nz = grid(1)%nz
     p  => grid(1)%p;  du => grid(1)%du;  dv => grid(1)%dv;  dw => grid(1)%dw
-    cA => grid(1)%cA
-    x  => grid(1)%b;  y  => grid(1)%r        ! free work arrays at init
-      pg => grid(1)%pg;  cAg => grid(1)%cAg
-      allocate(xg(0:ny+1,0:nx+1), yg(0:ny+1,0:nx+1));  xg = zero;  yg = zero
-    dsym = zero
+    x  => grid(1)%b;  y  => grid(1)%r;   r  => grid(1)%r
+    pg => grid(1)%pg
+    allocate(xg(0:ny+1,0:nx+1), yg(0:ny+1,0:nx+1));  xg = zero;  yg = zero
     pj = myrank/grid(1)%npx
     pi = mod(myrank,grid(1)%npx)
 
-    ! rows checked against the formulas: no masked face within 2 cells
-    allocate(clear(1:ny,1:nx));  clear = .true.
-    do i = 1,nx
-      do j = 1,ny
-        if (any(umsk(max(0,j-2):min(ny+1,j+2),max(0,i-2):min(nx+1,i+3)) == zero) .or. &
-            any(vmsk(max(0,j-2):min(ny+1,j+3),max(0,i-2):min(nx+1,i+2)) == zero)) clear(j,i) = .false.
-      enddo
-    enddo
-
-    dint = zero;  dext = zero;  dnul = zero
-
-    ! 27 colours on GLOBAL indices (consistent across seams)
-    do a = 0,2
-      do bb = 0,2
-        do c = 0,2
-          p = zero
-          do i = 1,nx
-            ig = i + pi*nx
-            if (mod(ig,3) /= a) cycle
-            do j = 1,ny
-              jg = j + pj*ny
-              if (mod(jg,3) /= bb) cycle
-              do k = 1,nz
-                if (mod(k,3) == c) p(k,j,i) = one
-              enddo
-            enddo
-          enddo
-            ! the ghost level is k = 0: colour c = 0
-            pg = zero
-            if (c == 0) then
-           do i = 1,nx
-             ig = i + pi*nx
-             if (mod(ig,3) /= a) cycle
-             do j = 1,ny
-               jg = j + pj*ny
-               if (mod(jg,3) == bb) pg(j,i) = one
-             enddo
-           enddo
-            endif
-            call fill_halo(1,pg)
-          call fill_halo(1,p)
-          dw(1,:,:) = zero
-          call correction_uvw()                  ! (du,dv,dw) = M T M G p
-          do i = 1,nx
-            ig = i + pi*nx
-            di = -2                                ! offset with colour a
-            do m = -1,1
-              if (mod(ig+m+3,3) == a) di = m
-            enddo
-            do j = 1,ny
-              jg = j + pj*ny
-              dj = -2
-              do m = -1,1
-                if (mod(jg+m+3,3) == bb) dj = m
-              enddo
-              do k = 1,nz
-                dk = -2
-                do m = -1,1
-                  if (mod(k+m+3,3) == c) dk = m
-                enddo
-                v = -( du(k,j,i+1) - du(k,j,i)     &
-                     + dv(k,j+1,i) - dv(k,j,i)     &
-                     + dw(k+1,j,i) - dw(k,j,i) )
-                n = stencil_slot(dk,dj,di)
-                if (n > 0) then
-                  ! the formula value still in the slot is the reference
-                  if (i>=3 .and. i<=nx-2 .and. j>=3 .and. j<=ny-2 .and. clear(j,i)) then
-                    dint = max(dint, abs(v - cA(n,k,j,i)))
-                  else
-                    dext = max(dext, abs(v - cA(n,k,j,i)))
-                  endif
-                elseif (n == 0 .and. dj/=0 .and. di/=0) then
-                  ! outside the 15-point pattern (xy corners except the
-                  ! bottom level's own pair, and all xyz corners)
-                  dnul = max(dnul,abs(v))
-                endif
-                call put_entry(cA,nx,ny,nz,v,dk,dj,di,k,j,i)
-              enddo
-                ! ghost row (level 0): its flux balance is -dw(1)
-                dk = -2
-                do m = -1,1
-               if (mod(m+3,3) == c) dk = m
-                enddo
-                v = -dw(1,j,i)
-                n = ghost_slot(dk,dj,di)
-                if (n > 0) then
-               if (i>=3 .and. i<=nx-2 .and. j>=3 .and. j<=ny-2 .and. clear(j,i)) then
-                 dint = max(dint, abs(v - cAg(n,j,i)))
-               else
-                 dext = max(dext, abs(v - cAg(n,j,i)))
-               endif
-               cAg(n,j,i) = v
-                else
-               dnul = max(dnul,abs(v))
-                endif
-            enddo
-          enddo
-        enddo
-      enddo
-    enddo
-      ! (no halo fill of cAg on the fine grid: the halo slots read by the
-      ! rows next to the east and north edges are set by put_entry, exact
-      ! at walls; a fill would mirror the interior values there)
-      ! symmetry of the ghost couplings: the cell rows' k-1 slots against
-      ! the ghost rows' k+1 slots (interior pairs)
-      do i = 2,nx
-     do j = 2,ny
-       v = max(abs(cA(2,1,j,i) - cAg(2,j,i)), &
-               abs(cA(5,1,j,i) - cAg(4,j-1,i)), &
-               abs(cA(8,1,j,i) - cAg(6,j,i-1)))
-       dsym = max(dsym, v)
-     enddo
-      enddo
-
-    ! symmetry of the true operator: <y,Ax> - <x,Ay> on two vectors
     do i = 1,nx
       ig = i + pi*nx
       do j = 1,ny
@@ -980,17 +856,12 @@ contains
           x(k,j,i) = sin(0.731_rp*ig + 1.213_rp*jg + 2.117_rp*k)
           y(k,j,i) = cos(1.379_rp*ig + 0.577_rp*jg + 1.911_rp*k)
         enddo
+        xg(j,i) = sin(0.531_rp*ig + 1.713_rp*jg)
+        yg(j,i) = cos(1.179_rp*ig + 0.877_rp*jg)
       enddo
     enddo
-      xg = zero;  yg = zero
-      do i = 1,nx
-     ig = i + pi*nx
-     do j = 1,ny
-       jg = j + pj*ny
-       xg(j,i) = sin(0.531_rp*ig + 1.713_rp*jg)
-       yg(j,i) = cos(1.179_rp*ig + 0.877_rp*jg)
-     enddo
-      enddo
+
+    ! <y,A x>
     do i = 0,nx+1                       ! loops: pointer targets may alias,
       do j = 0,ny+1                     ! a whole-array copy would build a
         do k = 1,nz                     ! full-field temporary on the stack
@@ -998,7 +869,7 @@ contains
         enddo
       enddo
     enddo
-      pg = xg;  call fill_halo(1,pg)
+    pg = xg;  call fill_halo(1,pg)
     call fill_halo(1,p);  dw(1,:,:) = zero;  call correction_uvw()
     syx = zero
     do i = 1,nx
@@ -1011,6 +882,7 @@ contains
         syx = syx - yg(j,i) * dw(1,j,i)
       enddo
     enddo
+    ! <x,A y>; du,dv,dw then hold T grad y
     do i = 0,nx+1
       do j = 0,ny+1
         do k = 1,nz
@@ -1018,7 +890,7 @@ contains
         enddo
       enddo
     enddo
-      pg = yg;  call fill_halo(1,pg)
+    pg = yg;  call fill_halo(1,pg)
     call fill_halo(1,p);  dw(1,:,:) = zero;  call correction_uvw()
     sxy = zero
     do i = 1,nx
@@ -1031,72 +903,41 @@ contains
         sxy = sxy - xg(j,i) * dw(1,j,i)
       enddo
     enddo
-      ! self-check: matrix product against the true operator on p = y
-      ! (du,dv,dw hold the correction of p = y): per row type
-      call ghost_operator_check()
-    p = zero;  x = zero;  y = zero
-      pg = zero;  grid(1)%bg = zero;  grid(1)%rg = zero
-      deallocate(xg, yg)
-    deallocate(clear)
-
-    amax = zero
+    ! A y by the matrix: b = 0 -> r = -A p
+    x = zero;  grid(1)%bg = zero
+    call compute_residual(1,res)
+    l = zero
     do i = 1,nx
       do j = 1,ny
         do k = 1,nz
-          amax = max(amax, abs(cA(1,k,j,i)))
+          d = ( du(k,j,i+1) - du(k,j,i) + dv(k,j+1,i) - dv(k,j,i) + dw(k+1,j,i) - dw(k,j,i) )
+          if (k == 1) then
+            l(1) = max(l(1), abs(d - r(k,j,i)))
+          else
+            l(2) = max(l(2), abs(d - r(k,j,i)))
+          endif
+          l(4) = max(l(4), abs(grid(1)%cA(1,k,j,i)))
         enddo
+        l(3) = max(l(3), abs(dw(1,j,i) - grid(1)%rg(j,i)))
       enddo
     enddo
-    lc = (/ dint, dext, dnul, amax /)
-    call MPI_Allreduce(lc,gl,4,MPI_DOUBLE_PRECISION,MPI_MAX,MPI_COMM_WORLD,ierr)
-    amax = gl(4)
+    call MPI_Allreduce(l,g,4,MPI_DOUBLE_PRECISION,MPI_MAX,MPI_COMM_WORLD,ierr)
     ls = (/ syx, sxy /)
     call MPI_Allreduce(ls,gs,2,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_WORLD,ierr)
-    syx = gs(1);  sxy = gs(2)
-    call MPI_Allreduce(dsym,gsym,1,MPI_DOUBLE_PRECISION,MPI_MAX,MPI_COMM_WORLD,ierr)
-    if (myrank==0) write(*,'(A,ES9.2,A)') '       ghost-bottom rows: cell/ghost coupling symmetry ', &
-         gsym/amax, '   (rel. to max|diag|)'
+    amax = g(4)
     if (myrank==0) then
-       write(*,'(A)') '     masked stencil (fine grid):'
-       write(*,'(A,ES9.2,A,ES9.2,A)') '       max|num-formula| interior ', gl(1)/amax, &
-            '   near perimeter ', gl(2)/amax, '   (rel. to max|diag|)'
-       write(*,'(A,ES9.2,A,ES9.2)') '       symmetry |<y,Ax>-<x,Ay>|/|<y,Ax>| ', &
-            abs(syx-sxy)/max(abs(syx),tiny(one)), '   outside 15-point pattern ', gl(3)/amax
+       write(*,'(A,3ES10.2)') '     operator check |A y - div(T grad y)|/max|diag|: k=1, k>1, ghost ', g(1:3)/amax
+       write(*,'(A,ES9.2)')   '       operator symmetry |<y,Ax>-<x,Ay>|/|<y,Ax>| ', &
+            abs(gs(1)-gs(2))/max(abs(gs(1)),tiny(one))
     endif
-    gl(1) = max(gl(1), gl(2))    ! the recompute relies on every row
-    if (gl(1)/amax > 1e-10_rp) then
-       if (myrank==0) write(*,*) 'assemble_masked_stencil: formula mismatch -- stopping'
+    p = zero;  x = zero;  r = zero
+    pg = zero;  grid(1)%bg = zero;  grid(1)%rg = zero
+    deallocate(xg, yg)
+    if (maxval(g(1:3))/amax > 1e-10_rp) then
+       if (myrank==0) write(*,*) 'operator_check: matrix does not match the operator -- stopping'
        call MPI_Abort(MPI_COMM_WORLD,1,ierr)
     endif
-
-  contains
-    subroutine ghost_operator_check()
-      use mg_relax, only: compute_residual
-      real(kind=rp) :: d, l3(3), g3(3), res
-      real(kind=rp), dimension(:,:,:), pointer :: r
-      integer(kind=ip) :: ierr
-      r => grid(1)%r
-      x = zero;  grid(1)%bg = zero       ! b = 0 -> r = -A p
-      call compute_residual(1,res)
-      l3 = zero
-      do i = 1,nx
-        do j = 1,ny
-          do k = 1,nz
-            d = ( du(k,j,i+1) - du(k,j,i) + dv(k,j+1,i) - dv(k,j,i) + dw(k+1,j,i) - dw(k,j,i) )
-            if (k == 1) then
-              l3(1) = max(l3(1), abs(d - r(k,j,i)))
-            else
-              l3(2) = max(l3(2), abs(d - r(k,j,i)))
-            endif
-          enddo
-          l3(3) = max(l3(3), abs(dw(1,j,i) - grid(1)%rg(j,i)))
-        enddo
-      enddo
-      call MPI_Allreduce(l3,g3,3,MPI_DOUBLE_PRECISION,MPI_MAX,MPI_COMM_WORLD,ierr)
-      if (myrank==0) write(*,'(A,3ES10.2)') '       ghost operator check |A p - div(T grad p)|: k=1, k>1, ghost ', g3
-      r = zero;  grid(1)%rg = zero
-    end subroutine ghost_operator_check
-  end subroutine assemble_masked_stencil
+  end subroutine operator_check
 
   !-------------------------------------------------------------------------
   function stencil_slot(dk,dj,di) result(n)
@@ -1117,51 +958,7 @@ contains
     endif
   end function stencil_slot
 
-  function ghost_slot(dk,dj,di) result(n)
-    ! slot (1..6) of a ghost row's storage cAg that holds the coupling to
-    ! the neighbour at offset (dk,dj,di) from the ghost cell (dk=1: the
-    ! k=1 cells); 0 if off-pattern
-    integer(kind=ip), intent(in) :: dk,dj,di
-    integer(kind=ip) :: n
-    n = 0
-    if (dk==0 .and. dj==0 .and. di==0) n = 1
-    if (dk==1) then
-      if (dj==0  .and. di==0 ) n = 2
-      if (dj==-1 .and. di==0 ) n = 3
-      if (dj==1  .and. di==0 ) n = 4
-      if (dj==0  .and. di==-1) n = 5
-      if (dj==0  .and. di==1 ) n = 6
-    endif
-  end function ghost_slot
 
-  !-------------------------------------------------------------------------
-  subroutine put_entry(cA,nx,ny,nz,v,dk,dj,di,k,j,i)
-    ! store the operator value v of row (k,j,i), offset (dk,dj,di):
-    ! its own slot, and the halo slots read by the rows east, north and
-    ! south of the subdomain (their mirror couplings)
-    real(kind=rp), dimension(:,:,:,:), pointer, intent(in) :: cA
-    integer(kind=ip), intent(in) :: nx,ny,nz,dk,dj,di,k,j,i
-    real(kind=rp), intent(in) :: v
-    integer(kind=ip) :: n
-    n = stencil_slot(dk,dj,di)
-    if (n > 0) cA(n,k,j,i) = v
-    if (i == nx) then
-      if (dk==0 .and. dj==0 .and. di==1)               cA(7,k,j,nx+1)   = v
-      if (k>=2 .and. dk==-1 .and. dj==0 .and. di==1)   cA(6,k-1,j,nx+1) = v
-      if (k<=nz-1 .and. dk==1 .and. dj==0 .and. di==1) cA(8,k+1,j,nx+1) = v
-        ! k=1 -> ghost (j,nx+1): the ghost row's (k+1,i-1) slot
-        if (k==1 .and. dk==-1 .and. dj==0 .and. di==1) grid(1)%cAg(5,j,nx+1) = v
-    endif
-    if (j == ny) then
-      if (dk==0 .and. dj==1 .and. di==0)               cA(4,k,ny+1,i)   = v
-      if (k>=2 .and. dk==-1 .and. dj==1 .and. di==0)   cA(3,k-1,ny+1,i) = v
-      if (k<=nz-1 .and. dk==1 .and. dj==1 .and. di==0) cA(5,k+1,ny+1,i) = v
-        if (k==1 .and. dk==-1 .and. dj==1 .and. di==0) grid(1)%cAg(3,ny+1,i) = v
-    endif
-    if (j == 1) then
-      if (k==1 .and. dk==0 .and. dj==-1 .and. di==1)   cA(5,1,0,i+1)    = v
-    endif
-  end subroutine put_entry
 
 
   !-------------------------------------------------------------------------     
@@ -1183,15 +980,11 @@ contains
     enddo
     deallocate(t2)
   end subroutine fill_halo_cAg
-  subroutine correction_uvw(i0,i1,j0,j1)
-    ! optional bounds restrict the i and j loops (band extraction of the
-    ! wall rows at a matrix recompute); default = whole subdomain
-    integer(kind=ip), optional, intent(in) :: i0,i1,j0,j1
-
+  subroutine correction_uvw()
     !! u,v,w are fluxes, the correction is T*grad(p)
 
     integer(kind=ip):: k, j, i
-    integer(kind=ip):: nx, ny, nz, ia, ib, ja, jb
+    integer(kind=ip):: nx, ny, nz
 
     real(kind=rp), dimension(:,:)  , pointer :: dx,dy
     real(kind=rp), dimension(:,:)  , pointer :: dxu,dyv
@@ -1218,11 +1011,6 @@ contains
     nx = grid(1)%nx
     ny = grid(1)%ny
     nz = grid(1)%nz
-    ia = 0;  ib = nx+1;  ja = 0;  jb = ny+1
-    if (present(i0)) ia = i0
-    if (present(i1)) ib = i1
-    if (present(j0)) ja = j0
-    if (present(j1)) jb = j1
 
     dx    => grid(1)%dx
     dy    => grid(1)%dy
@@ -1244,16 +1032,16 @@ contains
     py => grid(1)%py
     pz => grid(1)%pz
 
-    do i = max(1,ia),min(nx+1,ib)
-        do j = max(0,ja),min(ny+1,jb)
+    do i = 1,nx+1
+        do j = 0,ny+1
           do k = 1,nz
              px(k,j,i) = -one / dxu(j,i) * (p(k,j,i)-p(k,j,i-1))
           enddo
        enddo
     enddo
 
-    do i = max(0,ia),min(nx+1,ib)
-       do j = max(1,ja),min(ny+1,jb)
+    do i = 0,nx+1
+       do j = 1,ny+1
           do k = 1,nz
              py(k,j,i) = -one / dyv(j,i) * (p(k,j,i)-p(k,j-1,i))
           enddo
@@ -1262,20 +1050,20 @@ contains
 
     ! column masking: no pressure gradient through no-flux faces
     if (allocated(umsk)) then
-       do i = max(1,ia),min(nx+1,ib)
-          do j = max(0,ja),min(ny+1,jb)
+       do i = 1,nx+1
+          do j = 0,ny+1
              px(:,j,i) = px(:,j,i)*umsk(j,i)
           enddo
        enddo
-       do i = max(0,ia),min(nx+1,ib)
-          do j = max(1,ja),min(ny+1,jb)
+       do i = 0,nx+1
+          do j = 1,ny+1
              py(:,j,i) = py(:,j,i)*vmsk(j,i)
           enddo
        enddo
     endif
 
-    do i = max(0,ia),min(nx+1,ib)
-       do j = max(0,ja),min(ny+1,jb)
+    do i = 0,nx+1
+       do j = 0,ny+1
           k = 1 ! bottom: the mirror of the surface value, from the ghost
                 ! pressure p(0) = pg of the column
           pz(k,j,i) = -one / dzw(k,j,i) * (p(k,j,i)-pg(j,i))
@@ -1294,8 +1082,8 @@ contains
 
     du => grid(1)%du
 
-    do i = max(1,ia),min(nx+1,ib)
-       do j = max(1,ja),min(ny,jb)
+    do i = 1,nx+1
+       do j = 1,ny
           k = 1
           ! interior form with the factor-two half-cell
           ! term at the bottom face (mirror of the surface row)
@@ -1329,8 +1117,8 @@ contains
 
     dv => grid(1)%dv
 
-    do i = max(1,ia),min(nx,ib)
-       do j = max(1,ja),min(ny+1,jb)
+    do i = 1,nx
+       do j = 1,ny+1
           k = 1
           dv(k,j,i) = Ary(k,j,i) * py(k,j,i) &
                - qrt * ( &
@@ -1363,8 +1151,8 @@ contains
 
     dw => grid(1)%dw
 
-    do i = max(1,ia),min(nx,ib)
-       do j = max(1,ja),min(ny,jb)
+    do i = 1,nx
+       do j = 1,ny
           ! bottom face: the kinematic row of T (mirror
           ! of the Dirichlet surface row); W(1) = 0 is enforced by the
           ! projection through the ghost pressure
@@ -1407,13 +1195,13 @@ contains
 
     ! row masking: no flux correction through no-flux faces
     if (allocated(umsk)) then
-       do i = max(1,ia),min(nx+1,ib)
-          do j = max(1,ja),min(ny,jb)
+       do i = 1,nx+1
+          do j = 1,ny
              du(:,j,i) = du(:,j,i)*umsk(j,i)
           enddo
        enddo
-       do i = max(1,ia),min(nx,ib)
-          do j = max(1,ja),min(ny+1,jb)
+       do i = 1,nx
+          do j = 1,ny+1
              dv(:,j,i) = dv(:,j,i)*vmsk(j,i)
           enddo
        enddo
@@ -1424,29 +1212,29 @@ contains
     ! du = n Arx/(theta c dt) p, which summed over the column is Flather
     ! at the new time level with zeta(n+1)-zeta(n) = pbar/(theta g dt)
     if (allocated(obcrob_u)) then
-       if (grid(1)%neighb(4) == MPI_PROC_NULL .and. ia <= 1) then
-          do j = max(1,ja),min(ny,jb)
+       if (grid(1)%neighb(4) == MPI_PROC_NULL) then
+          do j = 1,ny
              do k = 1,nz
                 du(k,j,1) = du(k,j,1) + obcrob_u(j,1)*Arx(k,j,1)*p(k,j,1)
              enddo
           enddo
        endif
-       if (grid(1)%neighb(2) == MPI_PROC_NULL .and. ib >= nx+1) then
-          do j = max(1,ja),min(ny,jb)
+       if (grid(1)%neighb(2) == MPI_PROC_NULL) then
+          do j = 1,ny
              do k = 1,nz
                 du(k,j,nx+1) = du(k,j,nx+1) + obcrob_u(j,nx+1)*Arx(k,j,nx+1)*p(k,j,nx)
              enddo
           enddo
        endif
-       if (grid(1)%neighb(1) == MPI_PROC_NULL .and. ja <= 1) then
-          do i = max(1,ia),min(nx,ib)
+       if (grid(1)%neighb(1) == MPI_PROC_NULL) then
+          do i = 1,nx
              do k = 1,nz
                 dv(k,1,i) = dv(k,1,i) + obcrob_v(1,i)*Ary(k,1,i)*p(k,1,i)
              enddo
           enddo
        endif
-       if (grid(1)%neighb(3) == MPI_PROC_NULL .and. jb >= ny+1) then
-          do i = max(1,ia),min(nx,ib)
+       if (grid(1)%neighb(3) == MPI_PROC_NULL) then
+          do i = 1,nx
              do k = 1,nz
                 dv(k,ny+1,i) = dv(k,ny+1,i) + obcrob_v(ny+1,i)*Ary(k,ny+1,i)*p(k,ny,i)
              enddo

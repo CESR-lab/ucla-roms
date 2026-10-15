@@ -39,7 +39,7 @@ module mg_grids
      real(kind=rp),dimension(:,:,:),pointer :: p => null()    ! Pressure
      real(kind=rp),dimension(:,:,:),pointer :: b => null()    ! Right-hand side
      real(kind=rp),dimension(:,:,:),pointer :: r => null()    ! Residual
-     ! bottom ghost pressure level (ghost_bottom): one row per column
+     ! bottom ghost pressure level: one row per column
      real(kind=rp),dimension(:,:)  ,pointer :: pg => null()   ! ghost pressure p(0)
      real(kind=rp),dimension(:,:)  ,pointer :: bg => null()   ! its rhs (provisional bottom flux)
      real(kind=rp),dimension(:,:)  ,pointer :: rg => null()   ! its residual
