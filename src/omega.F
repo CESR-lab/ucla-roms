@@ -51,8 +51,9 @@
       elseif (FIRST_TIME_STEP) then
         dtau=0.5*dt
       else
-        dtau=0.6*dt
-c**     dtau=(1.-1./6.)*dt
+        ! The predictor uses a (1-AM3_crv)*dt time step
+        ! Make sure that AM3_crv is set to 1./6 in pre_step.F
+        dtau=(1.-1./6.)*dt
       endif
 
       Wi(1:nx,1:ny,0)=0.
