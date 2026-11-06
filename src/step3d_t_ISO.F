@@ -797,10 +797,12 @@ c**               cff=1./(z_r(i,j,k+1)-z_r(i,j,k))
 
           call t_vadv_cor(FC,j,itrc)
 
+          ! tadvz holds the C4(We+Wi) flux from diag_t_adv_vc4; tmixz
+          ! (below) is the residual: UP3(We)-C4(We+Wi), implicit Wi
+          ! upwind, Akt mixing and surface/pipe sources.
           if (diag_trc.and.wrt_t_dia(itrc) ) then
             do k=1,nz
               do i=1,nx
-                Tdiag(i,j,k,tadvz,td(itrc)) = FC(i,k)
                 VFlxD(i,k) = t(i,j,k,nnew,itrc)
               enddo
             enddo
