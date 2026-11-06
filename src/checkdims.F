@@ -1,5 +1,6 @@
 #include "cppdefs.opt"
 
+!-----------------------------------------------------------------------------------------------
       integer function checkdims(ncid, fname, max_rec)  ![
 
 ! Verify that all spatial dimensions in file with netCDF ID=ncid
@@ -103,7 +104,7 @@
       endif
 #ifdef SOLVE3D
       if (chk_Cs_wr>0) then
-        icount=icount+check_scoord(ncid, fname, chk_Cs_wr)
+!       icount=icount+check_scoord(ncid, fname, chk_Cs_wr)
       endif
 #endif
   1   format(/' ### ERROR: checkdims :: wrong size of dimension ''',
@@ -112,8 +113,10 @@
       checkdims=icount
 
       end  !]
-
+!-----------------------------------------------------------------------------------------------
       integer function check_vardims(ncid,fname, varid, horiz_type,n3)  ![
+
+      use dimensions
 
 ! Verify that spatial dimensions of a specified variable in netCDF
 ! file match that expected by the running mode.
@@ -144,10 +147,6 @@
 
 #define NO_RECORD_CHECK
 #include "compute_starts_counts.h"
-#if defined MPI && !defined PARALLEL_FILES
-      count(1)=LLm+2-imin  !<-- dimensions of the variable
-      count(2)=MMm+2-jmin  !<-- on the entire physical grid
-#endif
 
       lfnm=lenstr(fname)
       ierr=nf90_inquire_variable(ncid, varid, vname, vtype, ndims, dimid, natts)
@@ -200,133 +199,7 @@
       check_vardims=ierr
 
       end  !]
-
-
-#ifdef SOLVE3D
-
-! Check whether S-coordinate parameter hc, and Cs_w- Cs_r-curves found
-! in netCDF file "fname" match their counterparts in the running model.
-! Print error messages and return non-zero status, in the case of
-! mismatch.
-
-      integer function check_scoord(ncid, fname, what_to_check)  ![
-
-      use param
-      use scoord
-
-      implicit none
-      integer ncid, what_to_check
-      character(len=*) fname
-      real, parameter :: epsil=1.D-7
-      real tst_val(N+1)
-      integer ierr, k, icount, lfile, lenstr, read_nc1dat
-      logical chk_Cs_w, chk_Cs_r
-
-      if (mod(what_to_check,2) == 1) then
-        chk_Cs_w=.true.                    ! Decode incoming argument
-      else                                 ! "what_to_check" into two
-        chk_Cs_w=.false.                   ! logical switched to check
-      endif                                ! "Cs_w", "Cs_r", or both.
-      if (what_to_check > 1) then          ! The policy here is to
-        chk_Cs_r=.true.                    ! check only curve(s) which
-      else                                 ! has the corresponding
-        chk_Cs_r=.false.                   ! vertical dimension
-      endif
-
-      chk_Cs_r = .false.
-      chk_Cs_w = .false.
-
-      icount=0
-      lfile=lenstr(fname)
-      ierr=read_nc1dat(ncid, fname, 'hc', 1, tst_val)
-      if (ierr == 0) then
-        if (abs((hc-tst_val(1))/hc)>epsil) then
-                print *, hc,tst_val(1)
-          write(*,'(/1x,2A,F12.5,1x,A,F12.5,1x,3A/)')  '### ERROR: ',
-     &                  'Mismatch in ''hc'': should be', hc, 'found',
-     &               tst_val(1), 'in file ''', fname(1:lfile), '''.'
-          icount=icount+1
-# ifdef VERBOSE
-        else
-          write(*,*) 'check_scoord :: checking hc:  OK'
-# endif
-        endif
-      endif
-
-      if (chk_Cs_w) then
-        ierr=read_nc1dat(ncid, fname, 'Cs_w', N+1, tst_val)
-        if (ierr == 0) then
-          do k=N,0,-1
-            if (abs(Cs_w(k)-tst_val(k+1)) > epsil) then
-              ierr=ierr+1
-            endif
-          enddo
-          if (ierr /= 0) then
-            write(*,'(/1x,4A/)')  '### ERROR: Mismatch in ''Cs_w'' ',
-     &                    'values in file ''', fname(1:lfile), '''.'
-            icount=icount+1
-# ifdef VERBOSE
-          else
-            write(*,*) 'check_scoord :: checking Cs_w: OK'
-# endif
-          endif
-        endif
-      endif
-
-      if (chk_Cs_r) then
-        ierr=read_nc1dat(ncid, fname, 'Cs_r', N, tst_val)
-        if (ierr == 0) then
-          do k=N,1,-1
-            if (abs(Cs_r(k)-tst_val(k)) > epsil) then
-              ierr=ierr+1
-            endif
-          enddo
-          if (ierr /= 0) then
-            write(*,'(/1x,4A/)')  '### ERROR: Mismatch in ''Cs_r'' ',
-     &                    'values in file ''', fname(1:lfile), '''.'
-            icount=icount+1
-# ifdef VERBOSE
-          else
-            write(*,*) 'check_scoord :: checking Cs_r: OK'
-# endif
-          endif
-        endif
-      endif
-
-      if (icount /= 0) then
-        ierr=read_nc1dat(ncid, fname, 'theta_s', 1,  tst_val)
-        if (ierr == 0) then
-          if (abs(theta_s-tst_val(1)) > epsil) then
-            write(*,'(/1x,A,2(A,F9.4,1x),3A/)')       '### ERROR: ',
-     &              'Mismatch in ''theta_s'': should be',   theta_s,
-     &      'found', tst_val(1), 'in file ''', fname(1:lfile), '''.'
-# ifdef VERBOSE
-          else
-            write(*,*) 'check_scoord :: checking theta_s: OK'
-# endif
-          endif
-        endif
-        ierr=read_nc1dat(ncid, fname, 'theta_b', 1,  tst_val)
-        if (ierr == 0) then
-          if (abs(theta_b-tst_val(1)) > epsil) then
-            write(*,'(/1x,A,2(A,F9.4,1x),3A/)')        '### ERROR: ',
-     &      'Mismatch in ''theta_b'': should be',   theta_b, 'found',
-     &               tst_val(1), 'in file ''', fname(1:lfile), '''.'
-# ifdef VERBOSE
-          else
-            write(*,*) 'check_scoord :: checking theta_b: OK'
-# endif
-          endif
-        endif
-      endif
-
-      check_scoord=icount
-
-      end  !]
-#endif
-
-
-
+!-----------------------------------------------------------------------------------------------
       function read_nc1dat(ncid, fname, vname, nlen, value)  ![
 
 ! A basic function to retrieve a simple variable [stored as either
@@ -350,6 +223,7 @@
 ! returned value  error status =0 means no error.
 
       use param
+      use dimensions
       use netcdf
 
       implicit none
@@ -418,7 +292,7 @@
             endif
           endif
         else
-          mpi_master_only write(*,'(/1x,6A/14x,A/)')
+          if (mynode.eq.0) write(*,'(/1x,6A/14x,A/)')
      &             '### WARNING: read_nc1dat :: ',
      &            'Cannot determine netCDF ID for ''',  vname(1:lvar),
      &      ''' in file ''', fname(1:lfile), '''.', nf90_strerror(ierr)

@@ -26,9 +26,10 @@ c--#define VERBOSE
 #endif
       real(kind=4), parameter :: FillValue=1.E+33 !<-- same as in ROMS
 
-      character(len=64) string,  trg_fname, VertCoordType
-      character(len=64), dimension(:), allocatable :: fname
-      character(len=32), dimension(:), allocatable :: dname,vname,
+      character(len=2048) string,  trg_fname 
+      character(len=64) VertCoordType
+      character(len=2048), dimension(:), allocatable :: fname
+      character(len=2048), dimension(:), allocatable :: dname,vname,
      &                                         sel_vars, tg_vname
       logical, dimension(:), allocatable :: Ld_in_use, lmask
       integer, dimension(:), allocatable :: dsize,  vtype, vdims,

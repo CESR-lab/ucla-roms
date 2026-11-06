@@ -33,6 +33,7 @@
       character(len=7),public,parameter :: dn_zr = 's_rho'
       character(len=7),public,parameter :: dn_zw = 's_w'
       character(len=7),public,parameter :: dn_tm = 'time'
+      character(len=7),public,parameter :: dn_nm = 'nmd'   ! number of terms in budget
 
       ! ---- user input ends
 
@@ -60,16 +61,6 @@
       character(len=99), public  :: output_root_name
       character(len=41), public  :: git_hash
 
-      ! Dimension names for in and output in netcdf files
-      ! All dimension names need to be strings of 7 characters
-!     character(len=7), public,parameter  :: xdim = 'xi_rho '
-!    &                                      ,ydim = 'eta_rho'
-!    &                                      ,zdim = 's_rho  '
-!    &                                      ,tdim = 'time   '
-!    &                                      ,xdimu= 'xi_u   '
-!    &                                      ,ydimv= 'eta_v  '
-!    &                                      ,zdimw= 's_w    '
-
       ! index ranges for coarse netcdf input
       integer :: ic0,ic1,jc0,jc1
       integer :: iSWc,jSWc
@@ -88,6 +79,7 @@
       character(len=max_options_string),public::flux_frc_opt='OFF'
       character(len=max_options_string),public::particle_opt='OFF'
       character(len=max_options_string),public::cdr_frc_opt  ='OFF'      
+      character(len=max_options_string),public::lmd_mix_opt  ='OFF'      
       ! forcing file specifications
       character(len=max_options_string),public::grid_files='N/A'
       character(len=max_options_string),public::ini_files='N/A'
@@ -108,18 +100,11 @@
       ! Horizontal Grid Type Codes =  0,1,2,3 for RHO-, U-, V-, PSI-points
       integer, parameter, public :: r_var=0, u_var=1, v_var=2, q_var=3
       !            Horizontal array dimensions in netCDF files. In the case
-      ! xi_rho     of MPI code with PARALLEL_FILES activated these dimensions
+      ! xi_rho     of MPI code these dimensions
       ! xi_u       depend on the corresponding sizes of individual subdomains
       ! eta_rho    rather than the whole physical grid, therefore they become
       ! eta_v      live variables placed in common block and assigned values
       !            in "mpi_setup" rather tnan be parameters defined here.
-
-#if defined MPI && defined PARALLEL_FILES
-!     integer, public ::  xi_rho, xi_u, eta_rho, eta_v
-#else
-!     integer, parameter, public :: xi_rho=LLm+2, eta_rho=MMm+2,
-!    &                              xi_u=xi_rho-1, eta_v=eta_rho-1
-#endif
 
       integer, parameter, public :: max_name_size=256
       character, public :: date_str*44, title*80
@@ -128,7 +113,8 @@
 
 
       public :: insert_nodes
-      public :: findstr,append_date_node
+      public :: findstr
+      public :: append_date_node
       public :: set_frc_data
       public :: read_output_root_name
       public :: find_new_record
@@ -1054,8 +1040,9 @@
         fname = trim(fname) //datestr
       endif
 
-#if defined MPI && defined PARALLEL_FILES
-      if (nnodes<10) then
+      if (nnodes==1) then
+        indxstr = ' '
+      elseif (nnodes<10) then
         write(indxstr,'(A,I0.1)') '.',mynode
       elseif (nnodes<100) then
         write(indxstr,'(A,I0.2)') '.',mynode
@@ -1070,15 +1057,13 @@
          stop
       endif
       fname = trim(fname) //trim(indxstr)
-#endif
 
       fname = trim(fname) // '.nc'
 
       end subroutine append_date_node !]
 !-----------------------------------------------------------------------
       subroutine insert_nodes(fname) ![
-      ! Insert date and node number string into filename
-      ! If the nodate argument is present, only add the node number
+      ! Insert node number string into filename
       implicit none
 
       ! import/export
@@ -1098,9 +1083,9 @@
         stop
       endif
 
-
-#if defined MPI && defined PARALLEL_FILES
-      if (nnodes<10) then
+      if (nnodes==1) then  ! single subdomain
+        indxstr = ' '
+      elseif (nnodes<10) then
         write(indxstr,'(A,I0.1)') '.',mynode
       elseif (nnodes<100) then
         write(indxstr,'(A,I0.2)') '.',mynode
@@ -1115,7 +1100,6 @@
          stop
       endif
       fname = trim(fname) //trim(indxstr)
-#endif
 
       fname = trim(fname) // '.nc'
 
@@ -1170,7 +1154,7 @@
       integer :: ncid, ierr, dimid
 
 
-#if defined MPI && defined PARALLEL_FILES
+#if defined MPI
       integer :: ibuff(4), npart
 
       npart=4                                    ! Put global attribute 'partition' which identifies subdomain
@@ -1278,10 +1262,6 @@
 
       ierr=nf90_put_att(ncid, nf90_global, 'Akt_bak', Akt_bak)
       ierr=nf90_put_att (ncid, nf90_global, 'Akt_bak_units', 'm^2/s')
-# endif
-# ifdef MY25_MIXING
-      ierr=nf90_put_att(ncid, nf90_global, 'Akq_bak',Akq_bak)
-      ierr=nf90_put_att (ncid, nf90_global, 'Akq_bak_units', 'm^2/s')
 # endif
 #endif
 

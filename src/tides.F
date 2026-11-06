@@ -8,6 +8,7 @@
       use roms_read_write
       use roms_mpi
       use grid
+      use boundary
 
       implicit none
 
@@ -82,42 +83,20 @@
 
       end subroutine init_tides  !]
 !-----------------------------------------------------------------------
-      subroutine set_tides(tile)  ![
-      ! computes current forcing for boundaries and surface tidal
-      ! potential
-      ! DevinD created seperate step as can't have compute_tile_bounds
-      ! and compute_auxilliary_bounds in the same subroutine as they both
-      ! declare and compute. Fortan doesn't allow.
-
-      use roms_mpi
-      use private_scratch  ! this isn't needed?
+      subroutine set_tides  ![
 
       implicit none
 
-      integer :: tile
-
-#include "compute_tile_bounds.h"
-
-      call set_tides_tile(istr,iend,jstr,jend)
-
-      end subroutine set_tides  !]
-!-----------------------------------------------------------------------
-      subroutine set_tides_tile(istr,iend,jstr,jend)  ![
-
-      use boundary
-      use grid
-      implicit none
-
-      ! input/outputs
-      integer,intent(in) :: istr,iend,jstr,jend
       ! local
-      integer :: tile, itide, i, j
+      integer :: itide,i,j
       real :: omT
-
-#include "compute_auxiliary_bounds.h"
 
       if (.not.allocated(ftide)) then 
         call init_tides
+      endif
+
+      if (pot_tides) then
+        ptide = 0
       endif
 
       do itide=1,ntides
@@ -126,129 +105,102 @@
 
         if (bry_tides) then
 
-#  ifdef OBC_WEST
-          if (WESTERN_EDGE) THEN
+          if (obc_west.and.west_bnd) then
 #   ifdef ANA_BRY
-            zeta_west(jstrR:jendR) = 0
-            ubar_west(jstrR:jendR) = 0
-            vbar_west(jstr :jendR) = 0
+            zeta_west(j0:j1) = 0
+            ubar_west(j0:j1) = 0
+            vbar_west(1 :j1) = 0
 #   endif
-            i=istr-1
-            do j=jstrR,jendR
+            do j=j0,j1
               zeta_west(j) =zeta_west(j)
-     &        + ztide_r(i,j,itide)*cos(omT)- ztide_i(i,j,itide)*sin(omT)
+     &        + ztide_r(0,j,itide)*cos(omT)- ztide_i(0,j,itide)*sin(omT)
             enddo
-            i=istrU-1
-            do j=jstrR,jendR
+            do j=j0,j1
               ubar_west(j)=ubar_west(j)
-     &        + utide_r(i,j,itide)*cos(omT)- utide_i(i,j,itide)*sin(omT)
+     &        + utide_r(1,j,itide)*cos(omT)- utide_i(1,j,itide)*sin(omT)
             enddo
-            i=istr-1
-            do j=jstr,jendR
+            do j=1,j1
               vbar_west(j)=vbar_west(j)
-     &        + vtide_r(i,j,itide)*cos(omT)- vtide_i(i,j,itide)*sin(omT)
+     &        + vtide_r(0,j,itide)*cos(omT)- vtide_i(0,j,itide)*sin(omT)
             enddo
           endif
-#  endif
 
-#  ifdef OBC_EAST
-          if (EASTERN_EDGE) THEN
+          if (obc_east.and.east_bnd) then
 #   ifdef ANA_BRY
-            zeta_east(jstrR:jendR) = 0
-            ubar_east(jstrR:jendR) = 0
-            vbar_east(jstr :jendR) = 0
+            zeta_east(j0:j1) = 0
+            ubar_east(j0:j1) = 0
+            vbar_east(1 :j1) = 0
 #   endif
-            i = iend+1
-            do j=jstrR,jendR
+            do j=j0,j1
               zeta_east(j) =zeta_east(j)
-     &        + ztide_r(i,j,itide)*cos(omT)- ztide_i(i,j,itide)*sin(omT)
+     &        + ztide_r(nx+1,j,itide)*cos(omT)- ztide_i(nx+1,j,itide)*sin(omT)
             enddo
-            do j=jstrR,jendR
+            do j=j0,j1
               ubar_east(j)=ubar_east(j)
-     &        + utide_r(i,j,itide)*cos(omT)- utide_i(i,j,itide)*sin(omT)
+     &        + utide_r(nx+1,j,itide)*cos(omT)- utide_i(nx+1,j,itide)*sin(omT)
             enddo
-            do j=jstr,jendR
+            do j=1,j1
               vbar_east(j)=vbar_east(j)
-     &        + vtide_r(i,j,itide)*cos(omT)- vtide_i(i,j,itide)*sin(omT)
+     &        + vtide_r(nx+1,j,itide)*cos(omT)- vtide_i(nx+1,j,itide)*sin(omT)
             enddo
           endif
-#  endif
 
-#  ifdef OBC_SOUTH
-          if (SOUTHERN_EDGE) THEN
+          if (obc_south.and.south_bnd) then
 #   ifdef ANA_BRY
-            zeta_south(istrR:jendR) = 0
-            ubar_south(istr :iendR) = 0
-            vbar_south(istrR:iendR) = 0
+            zeta_south(i0:i1) = 0
+            ubar_south(1 :i1) = 0
+            vbar_south(i0:i1) = 0
 #   endif
-            j=jstr-1
-            do i=istrR,iendR
+            do i=i0,i1
               zeta_south(i)=zeta_south(i)
-     &        + ztide_r(i,j,itide)*cos(omT)- ztide_i(i,j,itide)*sin(omT)
+     &        + ztide_r(i,0,itide)*cos(omT)- ztide_i(i,0,itide)*sin(omT)
             enddo
-            j=jstr-1
-            do i=istr,iendR
+            do i=1,i1
               ubar_south(i)=ubar_south(i)
-     &        + utide_r(i,j,itide)*cos(omT)- utide_i(i,j,itide)*sin(omT)
+     &        + utide_r(i,0,itide)*cos(omT)- utide_i(i,0,itide)*sin(omT)
             enddo
-            j=jstrV-1
-            do i=istrR,iendR
+            do i=i0,i1
               vbar_south(i)=vbar_south(i)
-     &        + vtide_r(i,j,itide)*cos(omT)- vtide_i(i,j,itide)*sin(omT)
+     &        + vtide_r(i,1,itide)*cos(omT)- vtide_i(i,1,itide)*sin(omT)
             enddo
           endif
-#  endif
-#  ifdef OBC_NORTH
-          if (NORTHERN_EDGE) THEN
+          if (obc_north.and.north_bnd) then
 #   ifdef ANA_BRY
-            zeta_north(istrR:jendR) = 0
-            ubar_north(istr :iendR) = 0
-            vbar_north(istrR:iendR) = 0
+            zeta_north(i0:i1) = 0
+            ubar_north(1 :i1) = 0
+            vbar_north(i0:i1) = 0
 #   endif
-            j=jend+1
-            do i=istrR,iendR
+            do i=i0,i1
               zeta_north(i)=zeta_north(i)
-     &        + ztide_r(i,j,itide)*cos(omT)- ztide_i(i,j,itide)*sin(omT)
+     &        + ztide_r(i,ny+1,itide)*cos(omT)- ztide_i(i,ny+1,itide)*sin(omT)
             enddo
-            do i=istr,iendR
+            do i=1,i1
               ubar_north(i)=ubar_north(i)
-     &        + utide_r(i,j,itide)*cos(omT)- utide_i(i,j,itide)*sin(omT)
+     &        + utide_r(i,ny+1,itide)*cos(omT)- utide_i(i,ny+1,itide)*sin(omT)
             enddo
-            do i=istrR,iendR
+            do i=i0,i1
               vbar_north(i)=vbar_north(i)
-     &        + vtide_r(i,j,itide)*cos(omT)- vtide_i(i,j,itide)*sin(omT)
+     &        + vtide_r(i,ny+1,itide)*cos(omT)- vtide_i(i,ny+1,itide)*sin(omT)
             enddo
           endif
-#  endif
         endif  ! bry_tides
 
         if (pot_tides) then
 !-----------------------------------------------------------------------
-!  Compute tidal potential (m)
-!  -- > to be applied as a pressure-gradient force
-!       in prsgrd (if SOLVE3D) or step2d (if not SOLVE3D)
+!  Tidal potential (applied as a pressure-gradient force in prsgrd)
 !-----------------------------------------------------------------------
-          if (itide==1) then ! initialize at the first tidal component
-            do j=jstrR-1,jendR
-              do i=istrR-1,iendR
-                ptide(i,j)=
-     &          ptide_r(i,j,itide)*cos(omT)-ptide_i(i,j,itide)*sin(omT)
-              enddo
+          do j=0,ny+1
+            do i=0,nx+1
+              ptide(i,j)= ptide(i,j)
+     &      + ptide_r(i,j,itide)*cos(omT)-ptide_i(i,j,itide)*sin(omT)
             enddo
-          else
-            do j=jstrR-1,jendR ! DevinD does jstrR-1 not go beyond computational margin?
-              do i=istrR-1,iendR
-                ptide(i,j)= ptide(i,j)
-     &        + ptide_r(i,j,itide)*cos(omT)-ptide_i(i,j,itide)*sin(omT)
-              enddo
-            enddo
-          endif
+          enddo
 
         endif  ! pot_tides
 
       enddo  !  itide=1,ntides
 
-      end subroutine set_tides_tile  !]
+      end subroutine set_tides  !]
 !-----------------------------------------------------------------------
       subroutine read_tides  ![
       ! read tides from forcing file. Only read once at first timestep.

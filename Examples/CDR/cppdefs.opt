@@ -7,7 +7,6 @@
 
 #define RIVERS
 
-
 #if defined RIVERS
 
 c--# define DIAGNOSTICS

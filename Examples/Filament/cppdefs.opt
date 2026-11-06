@@ -14,10 +14,7 @@ c# define ANA_BRY
 
 # define ANA_GRID
 # define ANA_INITIAL
-# define ANA_SMFLUX
-# define ANA_SRFLUX
-# define ANA_STFLUX
-# define ANA_SSFLUX
+# define ANA_SURFLUX
 
         /* Basics */
 # define SOLVE3D
@@ -27,7 +24,7 @@ c# define ANA_BRY
         /* Equation of State */
 c# define NONLIN_EOS
 c# define SPLIT_EOS
-c# define SALINITY
+# define SALINITY
 
         /* Mixing */
         /*        - lateral */

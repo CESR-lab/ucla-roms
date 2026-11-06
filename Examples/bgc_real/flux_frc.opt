@@ -11,5 +11,26 @@
       type (ncforce) :: nc_swflux = ncforce(vname='swflux',tname='swf_time' ) ! stflx(isalt) - surface freshwater flux (input data in cm/day). Might want to use #if def SALINITY?
       type (ncforce) :: nc_swrad  = ncforce(vname='swrad', tname='srf_time' ) ! swrad - surface short-wave radiation flux (input data in W/m^2)
 
+# ifdef DIURNAL_SRFLUX
+      logical,parameter :: diurnal_srflux=.true.    ! Diurnal modulation of short wave incoming radiation. For use with daily or longer averaged fluxes
+# else
+      logical,parameter :: diurnal_srflux=.false.   ! Diurnal modulation of short wave incoming radiation. For use with daily or longer averaged fluxes
+# endif
+# ifdef QCORRECTION
+      logical,parameter :: qcorrection =.true.    ! SST restoring
+# else
+      logical,parameter :: qcorrection =.false.   ! No SST restoring
+# endif
+# ifdef SFLX_CORR
+      logical,parameter :: sflx_correction =.true.   ! SSS restoring
+# else
+      logical,parameter :: sflx_correction =.false.  ! No SSS restoring
+# endif
+# ifdef SEA_ICE_NOFLUX
+      logical,parameter :: sea_ice_noflux =.true.   ! Poor man's sea ice model
+# else
+      logical,parameter :: sea_ice_noflux =.false.  ! No Poor man's sea ice model
+# endif
+
       ! End of user inputs
       ! ****************************************************************

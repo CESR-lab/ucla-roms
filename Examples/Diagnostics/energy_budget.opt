@@ -1,0 +1,10 @@
+
+      !-----------------------------------------------------------
+      ! User inputs for energy_budget output module
+      !
+      logical,public,parameter :: do_energy_budget = .true.
+      logical,public,parameter :: output_avg = .true.
+      real   ,parameter :: output_period = 3600    ! in seconds
+      integer,parameter :: nrpf   = 10             ! number of frames per file
+      !
+      !-----------------------------------------------------------

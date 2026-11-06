@@ -25,10 +25,7 @@ c--#endif
 
 # define ANA_GRID
 # define ANA_INITIAL
-# define ANA_SMFLUX
-# define ANA_SRFLUX
-# define ANA_STFLUX
-# define ANA_SSFLUX
+# define ANA_SURFLUX
 
         /* Basics */
 # define SOLVE3D

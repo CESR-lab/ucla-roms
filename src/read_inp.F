@@ -4,6 +4,7 @@
                                         ! startup file.
 
       use param
+      use dimensions
       use surf_flux
       use boundary
       use eos_vars
@@ -275,39 +276,17 @@
 #endif
 
 #ifdef SOLVE3D
-# if !defined LMD_MIXING && !defined BVF_MIXING && !defined PP_MIXING\
-                         && !defined MY2_MIXING && !defined MY25_MIXING
+# if !defined LMD_MIXING
 
 ! Background vertical viscosity and mixing coefficients for tracers.
 
         elseif (keyword(1:kwlen) == 'vertical_mixing') then
           call cancel_kwd(keyword(1:kwlen), ierr)
-          read(input,*,err=95) Akv_bak,(Akt_bak(itrc),itrc=1,NT)
-          mpi_master_only write(*,'(4x,A,ES10.3,2x,A)')  'Akv_bak =',
+          read(input,*,err=95) Akv_bak,Akt_bak
+          if (mynode.eq.0) write(*,'(4x,A,ES10.3,2x,A)')  'Akv_bak =',
      &               Akv_bak, 'background vertical viscosity [m^2/s]'
-          do itrc=1,NT
-            mpi_master_only write(*,'(1x,A,I1,A,ES10.3,2x,2A)')
-     &                     'Akt_bak(',  itrc,  ') =',  Akt_bak(itrc),
-     &                     'background vertical mixing [m^2/s] for ',
-     &        vname(2,indxT+itrc-1)(1:lenstr(vname(2,indxT+itrc-1)))
-          enddo
-# endif
-# ifdef MY25_MIXING
-! Mellor-Yamada Level 2.5 turbulent closure parameters.
-
-        elseif (keyword(1:kwlen) == 'MY_bak_mixing') then
-          call cancel_kwd(keyword(1:kwlen), ierr)
-          read(input,*,err=95) Akq_bak, q2nu2, q2nu4
-          mpi_master_only write(*,'(1x,A,ES10.3,1x,A)')  'Akq_bak =',
-     &        Akq_bak, 'Background vertical mixing for TKE, [m^2/s]'
-#  ifdef Q_DIF2
-          mpi_master_only write(*,'(1x,A,ES10.3,1x,A)')    'q2nu2 =',
-     &         q2nu2, 'Horizontal Laplacian mixing for TKE, [m^2/s]'
-#  endif
-#  ifdef Q_DIF4
-          mpi_master_only write(*,'(1x,A,ES10.3,1x,A)')    'q2nu4 =',
-     &        q2nu4, 'Horizontal biharmonic mixing for TKE, [m^4/s]'
-#  endif
+          if (mynode.eq.0) write(*,'(4x,A,ES10.3,2x,A)')  'Akt_bak =',
+     &               Akt_bak, 'tracer background vertical mixing [m^2/s]'
 # endif
 
 # if defined SFLX_CORR && defined SALINITY
@@ -404,7 +383,7 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
 #endif
 
 
-#ifdef SPONGE
+c#ifdef SPONGE
 ! Parameters for the sponge layers
 
         elseif (keyword(1:kwlen) == 'v_sponge') then
@@ -412,7 +391,7 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
           read(input,*,err=95) v_sponge
           mpi_master_only write(*,'(3x,A,F10.2,2x,A)') 'v_sponge =',
      &        v_sponge, 'maximum viscosity in sponge layer [m^2/s]'
-#endif
+c#endif
 
 ! Input file controls:  grid, initial conditions, surface forcing,
 !----- ----- ---------  lateral boundary forcing data
@@ -426,15 +405,11 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
           lstr=lenstr(fname)
           idx = index(fname,'/',back=.true.)
           fname_orig = trim(fname(idx+1:lstr))
-# if defined MPI && defined PARALLEL_FILES
-          call insert_node(fname, lstr, mynode, nsize, ierr)
-!         call insert_nodes(fname)
-# endif
-          open(testunit,file=fname(1:lstr), status='old', err=97)
+          call insert_nodes(fname)
+          open(testunit,file=trim(fname), status='old', err=97)
           close(testunit)
-          grdname=fname(1:lstr)
-          mpi_master_only write(*,'(1x,2A)') 'grid file: ',
-     &                                     grdname(1:lstr)
+          grdname=trim(fname)
+          if (mynode.eq.0) write(*,'(1x,2A)') 'grid file: ', trim(grdname)
           grid_files = ''
           call store_string_att(grid_files, fname_orig)
 #endif
@@ -453,13 +428,11 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
             lstr=lenstr(fname)
             idx = index(fname,'/',back=.true.)
             fname_orig = trim(fname(idx+1:lstr))
-#if defined MPI && defined PARALLEL_FILES
-            call insert_node(fname, lstr, mynode, nsize, ierr)
-#endif
-            ininame=fname(1:lstr)
-            mpi_master_only write(*,'(1x,A,I3,2x,3A)')
+            call insert_nodes(fname)
+            ininame=trim(fname)
+            if (mynode.eq.0) write(*,'(1x,A,I3,2x,3A)')
      &       'initial condition :: rec =', nrrec,  'file = ''',
-     &                                   ininame(1:lstr), ''''
+     &                                 trim(ininame), ''''
             ini_files = ''
             call store_string_att(ini_files, fname_orig)
 #ifdef ANA_INITIAL
@@ -480,27 +453,21 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
             if (lstr > 0) then
               idx = index(fname,'/',back=.true.)
               fname_orig = trim(fname(idx+1:lstr))
-!             if (mynode==0) then
-!               print *,'idx: ',idx
-!               print *,'fnames: ',trim(fname),' ',trim(fname_orig)
-!             endif
-# if defined MPI && defined PARALLEL_FILES
-              call insert_node(fname, lstr, mynode, nsize, ierr)
-# endif
-              open(testunit,file=fname(1:lstr),status='old',err=97)
+              call insert_nodes(fname)
+              open(testunit,file=trim(fname),status='old',err=97)
               close(testunit)
 
               if (max_frc < max_frc_files) then
                 max_frc=max_frc+1
-                frcfile(max_frc)=fname(1:lstr)
+                frcfile(max_frc)=trim(fname)
 # ifdef MPI_SILENT_MODE
                 if (mynode == 0) then
 # endif
                   if (max_frc == 1) then
                     write(*,'(1x,2A)') 'forcing data file(s): ',
-     &                                 frcfile(max_frc)(1:lstr)
+     &                                 trim(frcfile(max_frc))
                   else
-                    write(*,'(23x,A)') frcfile(max_frc)(1:lstr)
+                    write(*,'(23x,A)') trim(frcfile(max_frc))
                   endif
                   ! add to attributes
                   call store_string_att(force_files, fname_orig)
@@ -509,7 +476,7 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
                 endif
 # endif
               else
-                mpi_master_only write(*,'(1x,2A/12x,2A/)')
+                if (mynode.eq.0) write(*,'(1x,2A/12x,2A/)')
      &          '### ERROR: read_inp :: Too many forcing files are ',
      &          'specified in input script.',  'Increase parameter ',
      &                '''max_frc_files'' in roms_read_write and recompile.'
@@ -528,23 +495,6 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
 ! perimeter data only.  In this case (activated by T_FRC_BRY), no
 ! climatology file is needed.  The following code segments also
 ! checks for availability of clm_file.
-
-#if defined SOLVE3D &&( defined TCLIMATOLOGY ||( defined TNUDGING && \
-                        defined T_FRC_BRY )) && !defined ANA_TCLIMA
-
-        elseif (keyword(1:kwlen) == 'climatology') then
-          call cancel_kwd(keyword(1:kwlen), ierr)
-          read(input,'(A)',err=95) fname
-          lstr=lenstr(fname)
-# if defined MPI && defined PARALLEL_FILES
-          call insert_node(fname, lstr, mynode, nsize, ierr)
-# endif
-          open(testunit, file=fname(1:lstr), status='old', err=97)
-          close(testunit)
-          clm_file=fname(1:lstr)
-          mpi_master_only write(*,'(1x,4A)')   'climatology data :: ',
-     &                           'file = ''', clm_file(1:lstr), ''''
-#endif
 
 ! Read output file root name using roms_read_write.F module
         elseif (keyword(1:kwlen).eq.'output_root_name') then
@@ -579,7 +529,6 @@ c-->    elseif (keyword(1:kwlen) == 'nudg_cof') then
      &  'A total of', ierr, 'configuration errors discovered.'
        return
       endif
-!     call check_srcs
 #ifdef MPI
       call MPI_Barrier (ocean_grid_comm, ierr)
 #endif

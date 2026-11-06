@@ -84,29 +84,23 @@ CPATH = ${MPI_INC}:${NETCDF_INC}
 #	FFLAGS = -O3 -ip -pg
 
 PSRC = partit.F roms_part.F nc_read_write.F
-MSRC = partmap.F roms_part.F nc_read_write.F
 OSRC = optimal_part.F roms_part.F nc_read_write.F
 JSRC = ncjoin.F roms_part.F nc_read_write.F
 
   PCS = $(PSRC:.F=.f)
   PBJS = $(PSRC:.F=.o) 
   MCS = $(MSRC:.F=.f)
-  MBJS = $(MSRC:.F=.o) 
   OCS = $(OSRC:.F=.f)
   OBJS = $(OSRC:.F=.o) 
   JCS = $(JSRC:.F=.f)
   JBJS = $(JSRC:.F=.o) 
 
 # Everything
-all: depend partit partmap optimal ncjoin 
+all: depend partit optimal ncjoin 
 
 partit:  $(PBJS)
 	@echo 'Making: $(PBJS)'
 	$(LDR) $(FFLAGS) $(LDFLAGS) -o partit $(PBJS) $(LCDF)
-
-partmap:  $(MBJS)
-	@echo 'Making: $(MBJS)'
-	$(LDR) $(FFLAGS) $(LDFLAGS) -o partmap $(MBJS) $(LCDF)
 
 optimal:  $(OBJS)
 	@echo 'Making: $(OBJS)'
@@ -123,7 +117,7 @@ depend:  # Note: cross_matrix no longer used
 # Cleaning targets
 # -------- -------
 clean:
-	/bin/rm -rf *.f *.o *.a *.s *.mod *.trace *~ partit partmap optimal ncjoin 
+	/bin/rm -rf *.f *.o *.a *.s *.mod *.trace *~ partit optimal ncjoin 
 
 # Automatically generated dependency list:
 

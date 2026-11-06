@@ -18,11 +18,11 @@
 #ifdef MPI
       integer :: nnodes,nsize
 
-      integer ::
-     &    Lm=(LLm+NP_XI-1)/NP_XI, Mm=(MMm+NP_ETA-1)/NP_ETA
+!     integer ::
+!    &    Lm=(LLm+NP_XI-1)/NP_XI, Mm=(MMm+NP_ETA-1)/NP_ETA
 
-      integer ocean_grid_comm, mynode,  iSW_corn, jSW_corn,
-     &                         iwest, ieast, jsouth, jnorth
+!     integer ocean_grid_comm, mynode,  iSW_corn, jSW_corn 
+      integer iwest, ieast, jsouth, jnorth
 !     logical west_exchng,  east_exchng
 !     logical south_exchng, north_exchng
 #else

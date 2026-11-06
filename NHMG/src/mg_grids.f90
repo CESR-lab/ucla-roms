@@ -505,7 +505,7 @@ contains
 
     nhmin = 6 ! Smallest horizontal dimension of the coarsest grid
 
-    nzmin = 3 ! Smallest vertical dimension of the coarsest grid
+    nzmin = 2 ! Smallest vertical dimension of the coarsest grid
 
     nhg = min(nxg,nyg) ! smallest horizontal dimension of the finest grid
 
@@ -513,7 +513,7 @@ contains
 
     nl1 = 1+floor( log( nhg * one / nhmin * one) / log(two) )
 
-    nl2 = 1+floor( log( nzg * one / nzmin * one) / log(two) )
+    nl2 = 1+floor( log( nzg * one / nzmin * one) / log(two) ) +1
 
     nlevs = min(nl1,nl2) ! The number of grid levels in the MG.
 

@@ -72,7 +72,7 @@
       t_idx = b_idx+iTandS+nt_passive
       end function t_idx
 ! ----------------------------------------------------------------------
-      subroutine set_bgc_surf_frc(istr,iend,jstr,jend)  ![
+      subroutine set_bgc_surf_frc  ![
 
       ! read in bgc surface flux and interpolate to model time.
       ! Taken from get_smth.F & set_smth.F of ETH code.
@@ -90,25 +90,13 @@
 ! Needed for iron and dust variables, not yet ported to this module. Should do.
 !#include "bgc_forces.h"
 
-      ! input/outputs
-      integer,intent(in) :: istr,iend,jstr,jend
-      
       ! local
-      integer :: i, j
+      integer :: i,j
 
-#if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
-# include "compute_extended_bounds.h"
-#endif
-
-
-!     call set_frc_var_tile( istr, iend, jstr, jend, nc_dust,    dust,    interp_frc )  ! dust
-!     call set_frc_var_tile( istr, iend, jstr, jend, nc_iron,    iron,    interp_frc )  ! iron
       call set_frc_data(nc_dust,dust,'r')
       call set_frc_data(nc_iron,iron,'r')
 
-
 #ifdef PCO2AIR_FORCING
-!     call set_frc_var_tile( istr, iend, jstr, jend, nc_pco2air, pco2air, interp_frc )
       call set_frc_data(nc_pco2air,pco2air,'r')
 #ifdef MARBL
       call set_frc_data(nc_pco2air_alt,pco2air_alt,'r')
@@ -125,15 +113,14 @@
 
 #if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
       ! Daily average Short wave radiation
-!     call set_frc_var_tile( istr, iend, jstr, jend, nc_swrad_avg, swrad_avg, interp_frc )
       call set_frc_data(nc_swrad_avg,swrad_avg,'r')
      
-      do j=jstrR,jendR
-        do i=istrR,iendR
+      do j=1-bf,ny+bf
+        do i=1-bf,nx+bf
           swrad_avg(i,j)= swrad_avg(i,j)/(rho0*Cp)
           
 #ifdef SEA_ICE_NOFLUX
-          if( t(i,j,N,nrhs,itemp) .le. -1.8 ) then    ! Restrict stflx to prevent surface temperature to go below -2 degrees C.
+          if( t(i,j,nz,nrhs,itemp) .le. -1.8 ) then    ! Restrict stflx to prevent surface temperature to go below -2 degrees C.
 #   if defined LMD_KPP
 #if defined DAILYPAR_PHOTOINHIBITION || defined DAILYPAR_BEC
             swrad_avg(i,j)=0.
@@ -142,8 +129,8 @@
           endif
 #endif
 
-        enddo !<- istrR
-      enddo   !<- jstrR
+        enddo
+      enddo
      
 #endif /* DAILYPAR_PHOTOINHIBITION */ 
 

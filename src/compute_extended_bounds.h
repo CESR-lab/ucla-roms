@@ -19,9 +19,9 @@
 #endif
 #ifndef MPI
 # define iwest 1
-# define ieast Lm
+# define ieast nx
 # define jsouth 1
-# define jnorth Mm
+# define jnorth ny
 #endif
 
       integer istrR,iendR

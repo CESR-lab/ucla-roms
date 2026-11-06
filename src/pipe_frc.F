@@ -16,6 +16,7 @@
       use dimensions                                       ! has dimensions, a list of forcing files, and rmask
       use roms_read_write
       use nc_read_write
+      use roms_mpi
       use scalars
 
       implicit none
@@ -101,6 +102,8 @@
       ! local
       integer :: ierr,ncid,v_id,i,j
 
+
+      if (.not.pipe_source) return
 
       if (p_analytical) then
 

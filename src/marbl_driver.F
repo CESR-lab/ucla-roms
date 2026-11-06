@@ -31,10 +31,10 @@
       use MARBL_interface_public_types, only: marbl_diagnostics_type,
      &                                        marbl_saved_state_type
 #endif            
-      use param                       , only: mynode,nt,ntrc_bio,
-     &                                        isalt,itemp,Lm,Mm,
-     &                                        ocean_grid_comm
-      use dimensions                  , only: nx,ny,nz,bf
+      use param                       , only: nt,ntrc_bio,
+     &                                        isalt,itemp
+      use dimensions                  , only: nx,ny,nz,bf,
+     &                                        ocean_grid_comm,mynode
       use surf_flux                   , only: uwnd, vwnd
       use bgc_forces                  , only: pco2air,pco2air_alt,
      &                                        dust,iron
@@ -1165,7 +1165,7 @@
       
 #endif /* MARBL_DIAGS */
       
-      subroutine marbldrv_column_physics(istr,iend,jstr,jend,tracer_array)
+      subroutine marbldrv_column_physics(tracer_array)
       
 !-----------------------------------------------------------------------
 !     SUBROUTINE: marbldrv_column_physics
@@ -1194,7 +1194,6 @@
 !     8c. Update diagnostics array in ROMS using newly computed values      
 !                 
 !     INPUT/OUTPUT:
-!     - istr,jstr,iend,jend: i,j indices on this node over which to loop
 !     - tracer_array: the ROMS tracer array (t) to be updated by MARBL
 !      
 !     NOTES:
@@ -1218,9 +1217,6 @@
 
 !     
 !-----------------------------------------------------------------------
-     
-      integer, intent(in)                           :: istr,jstr,iend,jend
-
       real, dimension(GLOBAL_2D_ARRAY,nz,3,nt) ,
      &                            intent(inout)     :: tracer_array      
 #ifdef MARBL_DIAGS
@@ -1228,12 +1224,11 @@
 #endif
       integer                                       :: i,j,k,m
       logical                                       :: print_values = .false. ! Print example values to stdout during loop
-
       
 !     1. Populate MARBL instance surface flux forcing values:
 !     ----------------------------------------------------------------------
-      do j=jstr,jend
-         do i=istr,iend
+      do j=1,ny
+         do i=1,nx
 
             if (rmask(i,j)==0.) cycle
             
@@ -1415,15 +1410,15 @@
             end do ! m=1,nt_marbl
 
             
-         end do   ! j=jstr,jend
-      end do      ! i=istr,iend
+         end do
+      end do
 
       
 !     5. Populate MARBL instance interior tendency forcing values:      
 !     ----------------------------------------------------------------------
 
-      do j=jstr,jend
-         do i=istr,iend
+      do j=1,ny
+         do i=1,nx
             if (rmask(i,j)==0.) cycle
             
 ! First, update domain in MARBL instance to local geometry:
@@ -1579,8 +1574,8 @@
             end do
 #endif       
             
-         end do                 !j=jstr,jend
-      end do                    ! i=istr,iend
+         end do
+      end do
 
 
       

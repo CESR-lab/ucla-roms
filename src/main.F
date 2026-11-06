@@ -4,6 +4,7 @@
 !!    program main               ! Open MP version of ROMS driver
 
       use param
+      use dimensions
 #ifdef NHMG
       use nhmg
 #endif
@@ -13,24 +14,26 @@
       use obc_tune
 
 
-      implicit none 
+      implicit none
       integer :: ierr
       real*8 tstart, tend
 
       ierr=1
-      if (ierr == 1) call MPI_Init(ierr)
+      if (ierr==1) call MPI_Init(ierr)
 
       ocean_grid_comm=MPI_COMM_WORLD
       call MPI_Comm_size(ocean_grid_comm, nsize,  ierr)
       call MPI_Comm_rank(ocean_grid_comm, mynode, ierr)
 
+      nnodes = nsize
+
       ierr=0
-      call read_inp (ierr)
+      call read_inp(ierr)
 
       if (ierr==0) call mpi_setup(ierr)
 
       tstart=MPI_Wtime()
-      if (ierr == 0) then
+      if (ierr==0) then
 
 #ifdef BIOLOGY_BEC2
 !     When using BEC, BGC tracer indices are set in init_tracers
@@ -43,12 +46,9 @@
         call init_tracers
 #endif
         if (ierr == 0) then
-C$        call omp_set_dynamic(.false.)
-C$OMP PARALLEL                           ! fast-time averaging weights
-          call roms_thread               ! for barotropic mode, and
-C$OMP END PARALLEL                       ! launch the model in OpenMP
-        endif                            ! parallel regime.
-#ifdef NHMG  
+          call roms_thread
+        endif
+#ifdef NHMG
       ! write nhmg statistics to fort.10
       call nhmg_clean()
 #endif
@@ -82,14 +82,11 @@ C$OMP END PARALLEL                       ! launch the model in OpenMP
         if (diag_sync .and. may_day_flag /= 0) goto 99
       enddo
   99  call stop_timers()                 ! summarized among all nodes
-      if (may_day_flag /=0) 
+      if (may_day_flag /=0)
      &  call wrt_his_ocean_vars(.true.)  ! Emergency history file output
-C$OMP BARRIER                            ! and broadcasted by "diag"
-C$OMP MASTER                             ! [which sets diag_sync=T to
-      call closecdf                      ! signal that "may_day_flag"
-C$OMP END MASTER                         ! is in uniform state]. This
-      return                             ! is THE ONLY route to exit
-      end                                ! if something goes wrong.
+      call closecdf                      ! and broadcasted by "diag"
+      return                             ! [which sets diag_sync=T to
+      end                                ! signal uniform state].
 #endif
 
       subroutine roms_init
@@ -98,8 +95,10 @@ C$OMP END MASTER                         ! is in uniform state]. This
       use nhmg
 #endif
       use dimensions
+      use scoord
       use grid
       use ocean_vars
+      use extract_data
       use basic_output
       use scalars
       use analytical
@@ -110,6 +109,8 @@ C$OMP END MASTER                         ! is in uniform state]. This
       use cstar_output
       use random_output
       use cdr_frc
+      use energy_budget
+      use tri_solvers
 # if defined(BIOLOGY_BEC2) || defined(MARBL)
       use bec2_params
       use bgc_io
@@ -117,58 +118,24 @@ C$OMP END MASTER                         ! is in uniform state]. This
 
       implicit none
 
-      integer trd, tile, my_first, my_last, range
-C$    integer omp_get_thread_num, omp_get_num_threads
       integer ierr
 
-      numthreads=1 ; trd=0
-C$    numthreads=omp_get_num_threads()
-C$    trd=omp_get_thread_num()
-      proc(2)=trd
+      iic=0  ; kstp=1 ; knew=1  
+      iif=1  ; nstp=1          
+      nnew=1 ; nrhs=1         
 
-      if (mod(NSUB_X*NSUB_E,numthreads) /= 0) then
-C$OMP MASTER
-        mpi_master_only write(*,'(/3(1x,A,I3),A/)')
-     &    '### ERROR: Wrong choice of numthreads =', numthreads,
-c        endif
-     &         'while NSUB_X =', NSUB_X, 'NSUB_E =', NSUB_E,'.'
-        may_day_flag=8
-C$OMP END MASTER
-C$OMP BARRIER
-        goto 99 !-->  EXIT
-      endif
-                                       ! NOTE: This code is written
-      iic=0  ; kstp=1 ; knew=1         ! under an assumption that all
-#ifdef SOLVE3D
-      iif=1  ; nstp=1                  ! the scalar variables assigned
-      nnew=1 ; nrhs=1                  ! on the left here are placed
-#endif
-      synchro_flag=.true.              ! into a THREADPRIVATE common
-      diag_sync=.false.                ! block so each thread must
-      priv_count=0                     ! assign them to same values.
+      synchro_flag=.true.    
+      diag_sync=.false.     
+      priv_count=0         
 
-      range=(NSUB_X*NSUB_E+numthreads-1)/numthreads
-      my_first=trd*range
-      my_last=min(my_first + range-1, NSUB_X*NSUB_E-1)
-#define my_tile_range my_first,my_last
+      call init_tri_solve
+      call init_arrays
 
-      do tile=my_tile_range              ! Initialize or "first touch"
-        call init_arrays(tile,my_first)  ! global arrays (most of them
-      enddo                              ! are just set to to zero).
-C$OMP BARRIER
-
-#ifdef SOLVE3D
-C$OMP MASTER                           ! Setup vertical stretching
-      call set_scoord                  ! functions for S-coordinate
-C$OMP END MASTER                       ! system
-C$OMP BARRIER
+      call set_scoord                  ! Setup vertical stretching
+                                       ! functions for S-coordinate
       if (may_day_flag /= 0) goto 99
-#endif
-      
-      call get_grid                  ! can be analytic or from netcdf
 
-      call init_diagnostics  
-      print *,'calc_diag: ',calc_diag
+      call get_grid                    ! Can be analytic or read from netcdf
 
 #ifdef NHMG
       call nhmg_init(nx,ny,nz,npx,npy)
@@ -177,33 +144,13 @@ C$OMP BARRIER
 
       if (may_day_flag /= 0) goto 99 !-->  EXIT
 
-      do tile=my_tile_range            ! Compute various metric terms
-        call setup_grid1(tile)         ! and their combinations.
-      enddo
-C$OMP BARRIER
-CR      write(*,*) '-10' MYID
-      do tile=my_tile_range
-        call setup_grid2(tile)
-      enddo
-C$OMP BARRIER
-CR      write(*,*) '-9' MYID
+      call setup_grid1
+      call setup_grid2
 
-CR      write(*,*) ' -8' MYID
-
-#ifdef SOLVE3D
-      do tile=my_tile_range            ! Create three-dimensional
-        call set_depth(tile)           ! S-coordinate system, which
-# ifdef LMD_KPP
-        call swr_frac(tile)            ! may be needed by ana_init.
-# endif
-      enddo
-C$OMP BARRIER                          ! Here it is assumed that free
-      do tile=my_tile_range            ! surface zeta is at rest state,
-        call grid_stiffness(tile)      ! zeta=0). Also find and report
-      enddo                            ! extremal values of topographic
-C$OMP BARRIER                          ! slope parameters "rx0", "rx1".
-CR      write(*,*) ' -6' MYID
-#endif
+      call set_depth
+      call lmd_swr_frac                ! may be needed by ana_init.
+      call grid_stiffness              ! Report topographic slope
+                                       ! parameters rx0, rx1
 
 # if defined(BIOLOGY_BEC2)
 !     pH is initialized to 0 in ecosys_init
@@ -219,13 +166,13 @@ CR      write(*,*) ' -6' MYID
       call set_forces               ! model prognostic variables,
       call ana_init                 ! may require surface forcing
                                     ! either analytically or read
-      if (nrrec > 0) then 
+      if (nrrec > 0) then
 #endif
 
-      
+
 #ifdef EXACT_RESTART
-        call get_init(nrrec-1,2) 
-        call set_depth(0)
+        call get_init(nrrec-1,2)
+        call set_depth
 #endif
         call get_init(nrrec, 1)
 
@@ -243,24 +190,19 @@ CR      write(*,*) ' -6' MYID
       tdays=time*sec2day          ! is set by get_init or analytically
                                   ! copy it into threadprivate "time"
       call set_forces
-      call set_depth(0)
+      call set_depth
 
 !----------------------------------------------------------------------
-!  Set NHMG horizontal and vertical grids 
+!  Set NHMG horizontal and vertical grids
 !  then set matrices coefficients for the elliptic problem
 !----------------------------------------------------------------------
 #ifdef NHMG
-      call nhmg_matrices(Lm,Mm,N,halo,padd_X,padd_E,dzdxi,dzdeta,Hz,
-     &                   dm_r(0:Lm+1,0:Mm+1),
-     &                   dn_r(0:Lm+1,0:Mm+1)    )
+      call nhmg_matrices(nx,ny,N,halo,padd_X,padd_E,dzdxi,dzdeta,Hz,
+     &                   dm_r(0:nx+1,0:ny+1),
+     &                   dn_r(0:nx+1,0:ny+1)    )
 #endif
 
-CR      write(*,*)  ' -4' MYID
-      do tile=my_tile_range
-        call set_HUV
-      enddo
-C$OMP BARRIER
-CR      write(*,*)  ' -3' MYID
+      call set_HUV
 
       call omega
       call rho_eos(nrhs)
@@ -271,16 +213,19 @@ CR      write(*,*)  ' -2' MYID
         call init_particles
       endif
 
-#if defined SPONGE 
-      call set_nudgcof(0)
-#endif
+      call set_sponge
+
+      call init_diagnostics
+      if (do_extract) call do_extract_data
+
       ! The optional argument refers to
-      ! blowup if true, and initial if false. 
+      ! blowup if true, and initial if false.
       ! Come up with a better name!
       call wrt_his_ocean_vars(.false.)
 #if defined(BIOLOGY_BEC2) || defined(MARBL)
       call wrt_bgc(.true.)
 #endif
+      if (do_energy_budget) call init_energy_budget
       if (do_random) call init_random
       if (do_cstar)  call init_cstar
 
@@ -307,9 +252,14 @@ CR      write(*,*)  ' -2' MYID
       subroutine roms_step
 
       use param
+#ifdef NHMG
+      use nhmg
+#endif
+      use grid
       use ocean_vars
       use extract_data
       use diagnostics
+      use energy_budget
       use scalars
       use obc_tune
       use particles
@@ -358,7 +308,7 @@ CR      write(*,*)  ' -2' MYID
       tdays = (time-0.0*dt)*sec2day
       call set_bry_all
 
-      if (bry_tides.or.pot_tides) call set_tides(0)
+      if (bry_tides.or.pot_tides) call set_tides
 
       ! currrently, rho_eos works with t(nrhs), nrhs==nstp => time n
       call rho_eos(nrhs)
@@ -366,6 +316,14 @@ CR      write(*,*)  ' -2' MYID
       ! Computes horizontal fluxes, using nrhs => time n
       ! Hz is computed by set_depth
       call set_HUV
+
+#ifdef NHMG
+      if (mod(iic,20)==0) then
+        call nhmg_matrices(nx,ny,nz,halo,padd_X,padd_E,dzdxi,dzdeta,Hz,
+     &                   dm_r(0:nx+1,0:ny+1),
+     &                   dn_r(0:nx+1,0:ny+1)    )
+      endif
+#endif
 
       ! Computes vertical flux omega, using Flxu,Flxv computed in set_HUV
       ! Here, omega corresponds to time n
@@ -378,16 +336,15 @@ CR      write(*,*)  ' -2' MYID
 
       ! nrhs points to u/v at time level n
       call prsgrd
-      call pre_step3d(0)  ! u is m/s here
+      call pre_step3d   ! u is m/s here
 
-      !! nnew ==n+1/2  
-
+      !! nnew ==n+1/2
 
       !! set_HUV1 is like set_HUV, but first removes the barotr/barocl mismatch
       !! set_HUV1 works with nnew, which here is time n+1/2
       ! It's using the Hz from time n though
       ! Look into this to understand what it does
-      call set_HUV1(0)
+      call set_HUV1
 
       nrhs=3 ; nnew=3-nstp   !!! WARNING
 
@@ -404,17 +361,12 @@ CR      write(*,*)  ' -2' MYID
 
       tdays = (time+0.5*dt)*sec2day
       call set_bry_all  ! get for time n+1
-      if (bry_tides.or.pot_tides) call set_tides(0)
+      if (bry_tides.or.pot_tides) call set_tides
 
       ! All of this seems to happen with Hz's from time n
       ! Corrector step
       call prsgrd
-      call step3d_uv1(0)  ! update u/v(nnew) with dt*ru/rv
-
-#  ifdef UV_VIS2
-      call visc3d
-#  endif
-
+      call step3d_uv1  ! update u/v(nnew) with dt*ru/rv
 
 
 ! Solve the 2D equations for the barotropic mode.
@@ -430,10 +382,10 @@ CR      write(*,*)  ' -2' MYID
       enddo
 
       ! step3d_uv2 re-computes FlxU,FlV but still for n+1/2
-      call step3d_uv2(0)   
+      call step3d_uv2
 
       call omega
-      call step3d_t(0)
+      call step3d_t
 # if defined TS_DIF2 || defined TS_DIF4
       call t3dmix
 # endif
@@ -449,7 +401,7 @@ CR      write(*,*)  ' -2' MYID
       time=start_time+dt*float(iic-ntstart) + dt !n+1
       tdays=time*sec2day
 
-      call calc_avg_ocean_vars 
+      call calc_avg_ocean_vars
 
 !     Done with stepping, time for outputs
 
@@ -467,8 +419,9 @@ CR      write(*,*)  ' -2' MYID
 
       if (wrt_smflx.or.wrt_stflx) call wrt_sflux
 
-      if (calc_diag) call do_diagnostics 
+      if (calc_diag) call do_diagnostics
 
+      if (do_energy_budget) call wrt_energy_budget
       if (do_random) call wrt_random
 #if defined MARBL && defined MARBL_DIAGS
       if (do_cstar)  call wrt_cstar

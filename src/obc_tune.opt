@@ -10,7 +10,7 @@
       logical,public,parameter  :: obc_tuning = .false.
       logical         :: tune_avg = .true.
 
-      real,   parameter :: tune_timscale = 24*3600 ! filtering time scale
+      real,   parameter :: tune_timscale = 24*3600 ! tuning time scale
 
       logical,parameter :: wrt_obc_tune =.false. ! yes/no output sponge to file
       integer,parameter :: nrpf = 10             ! Number of records per file

@@ -3,6 +3,7 @@
 #include "cppdefs.opt"
 
       use netcdf
+      use dimensions
 
       implicit none
       private
@@ -89,7 +90,8 @@
       ! input
       integer               :: ncid
       character(len=*)      :: vname
-      real,dimension(:,:,:),contiguous :: dat
+!     real,dimension(:,:,:),contiguous :: dat
+      real,dimension(:,:,:) :: dat
 
       integer,dimension(:),optional :: start
 
@@ -184,7 +186,8 @@
       ! input
       integer               :: ncid
       character(len=*)      :: vname
-      real,dimension(:,:,:),contiguous :: dat
+!     real,dimension(:,:,:),contiguous :: dat
+      real,dimension(:,:,:) :: dat
 
       integer,dimension(:),optional :: start
 
@@ -194,7 +197,6 @@
       integer,dimension(4) :: count
       real,dimension(:,:,:),allocatable :: tmp
 
-      
       dims = shape(dat)
       allocate(tmp(dims(1),dims(2),dims(3)))
       tmp = dat
@@ -272,7 +274,6 @@
       ! handle fatal ierr with error messages.
       ! err_msg1 & 2 are optional messages
       ! get this from roms_read_write module rather at some point
-      use param
       implicit none
 
       ! inputs

@@ -2,7 +2,7 @@
 
 # need this here as well, in case example run on its own:
 case "$1" in
-    expanse|maya|laptop|github_gnu|github_ifx)
+    expanse|maya|laptop|zulu|github_gnu|github_ifx)
 	echo "running test for $1"
 	;;
     *)
@@ -20,10 +20,8 @@ echo "  test compiling..."
 echo "##############################"
 
 cp -p ../*.h . &> /dev/null
-cp -p ../cppdefs.opt .
-cp -p ../param.opt .
+cp -p ../*.opt .
 cp -p $ROMS_ROOT/Examples/code_check/diag.opt .
-#cp -p $ROMS_ROOT/Examples/code_check/Makedefs.inc .
 cp -p $ROMS_ROOT/Examples/Makefile .
 make compile_clean &> /dev/null
 make > compile.log 
@@ -44,10 +42,8 @@ fi
 
 rm *.h       &> /dev/null
 rm *.nc      &> /dev/null
-rm diag.opt  &> /dev/null
+rm *.opt     &> /dev/null
 rm Make*     &> /dev/null
-rm param.opt &> /dev/null
-rm cppdefs.opt# &> /dev/null
 rm roms      &> /dev/null
 
 # 2) Python - confirm values:

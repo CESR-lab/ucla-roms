@@ -354,7 +354,7 @@ contains
 
     call fill_halo(lev,r)
 
-    if (lev >-1) then
+    if (lev < 2) then
        resloc=res
        call global_sum(lev,resloc,res)
        res = sqrt(res)

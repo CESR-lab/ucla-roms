@@ -11,7 +11,28 @@ module mg_projection
 
   implicit none
 
+  ! Face masks on the fine grid: 1 = fluid face, 0 = no-flux face.
+  ! Set by set_face_masks (domain perimeter, non-periodic sides); an
+  ! interior land mask can be folded in later through the same arrays.
+  ! umsk(j,i): u-face i (west face of cell i);  vmsk(j,i): v-face j.
+  real(kind=rp), dimension(:,:), allocatable :: umsk, vmsk
+
 contains
+  !-----------------------------------------------------------------------------------
+  subroutine set_face_masks()
+    integer(kind=ip) :: nx, ny
+    nx = grid(1)%nx
+    ny = grid(1)%ny
+    if (.not.allocated(umsk)) allocate(umsk(0:ny+1,0:nx+1))
+    if (.not.allocated(vmsk)) allocate(vmsk(0:ny+1,0:nx+1))
+    umsk = one
+    vmsk = one
+    if (grid(1)%neighb(4) == MPI_PROC_NULL) umsk(:,1   ) = zero   ! west wall
+    if (grid(1)%neighb(2) == MPI_PROC_NULL) umsk(:,nx+1) = zero   ! east wall
+    if (grid(1)%neighb(1) == MPI_PROC_NULL) vmsk(1   ,:) = zero   ! south wall
+    if (grid(1)%neighb(3) == MPI_PROC_NULL) vmsk(ny+1,:) = zero   ! north wall
+  end subroutine set_face_masks
+
   !-----------------------------------------------------------------------------------
   subroutine set_matrices()
 
@@ -228,9 +249,177 @@ contains
           call write_netcdf(grid(lev)%cA,vname='ca',netcdf_file_name='cA.nc',rank=myrank,iter=lev)
        endif
 
+       ! Fine grid: replace the hand-assembled stencil by the exact
+       ! stencil of the MASKED operator  A = -D (M T M) G, so that the
+       ! no-flux faces of the domain perimeter (and, later, of an
+       ! interior land mask) are represented by zero rows/columns of T
+       ! instead of a mirrored p.  Mirroring is a zero-flux condition
+       ! only for the Arx*px part of the U row; with slope cross terms
+       ! it makes the effective operator non-symmetric, which under the
+       ! singular Neumann surface condition leaves an irreducible
+       ! residual (LOCK, 2026-09-04).  The stencil is read off 27
+       ! colouring vectors through correction_uvw itself, hence exact by
+       ! construction; the interior is checked against the formulas.
+       if (lev == 1) then
+          call set_face_masks()
+          call assemble_masked_stencil()
+       endif
+
     enddo
 
   end subroutine set_matrices
+
+  !-------------------------------------------------------------------------
+  subroutine assemble_masked_stencil()
+
+    integer(kind=ip) :: nx,ny,nz,i,j,k,a,bb,c,di,dj,dk,m,ig,jg,pi,pj
+    integer(kind=ip) :: ierr
+    real(kind=rp), dimension(:,:,:,:), allocatable :: A27, cAf
+    real(kind=rp), dimension(:,:,:), pointer :: p,du,dv,dw
+    real(kind=rp), dimension(:,:,:,:), pointer :: cA
+    real(kind=rp) :: dint, dext, dsym, dnul, amax, gl(4), lc(4)
+
+    nx = grid(1)%nx;  ny = grid(1)%ny;  nz = grid(1)%nz
+    p  => grid(1)%p;  du => grid(1)%du;  dv => grid(1)%dv;  dw => grid(1)%dw
+    cA => grid(1)%cA
+    pj = myrank/grid(1)%npx
+    pi = mod(myrank,grid(1)%npx)
+
+    allocate(A27(27,nz,ny,nx));  A27 = zero
+    allocate(cAf(8,nz,0:ny+1,0:nx+1));  cAf = cA        ! formula stencil, kept for the check
+
+    ! 27 colours on GLOBAL indices (consistent across seams)
+    do a = 0,2
+      do bb = 0,2
+        do c = 0,2
+          p = zero
+          do i = 1,nx
+            ig = i + pi*nx
+            if (mod(ig,3) /= a) cycle
+            do j = 1,ny
+              jg = j + pj*ny
+              if (mod(jg,3) /= bb) cycle
+              do k = 1,nz
+                if (mod(k,3) == c) p(k,j,i) = one
+              enddo
+            enddo
+          enddo
+          call fill_halo(1,p)
+          dw(1,:,:) = zero
+          call correction_uvw()                  ! (du,dv,dw) = M T M G p
+          do i = 1,nx
+            ig = i + pi*nx
+            di = -2                                ! offset with colour a
+            do m = -1,1
+              if (mod(ig+m+3,3) == a) di = m
+            enddo
+            do j = 1,ny
+              jg = j + pj*ny
+              dj = -2
+              do m = -1,1
+                if (mod(jg+m+3,3) == bb) dj = m
+              enddo
+              do k = 1,nz
+                dk = -2
+                do m = -1,1
+                  if (mod(k+m+3,3) == c) dk = m
+                enddo
+                m = 14 + di + 3*dj + 9*dk           ! 1..27, centre = 14
+                A27(m,k,j,i) = -( du(k,j,i+1) - du(k,j,i)     &
+                                + dv(k,j+1,i) - dv(k,j,i)     &
+                                + dw(k+1,j,i) - dw(k,j,i) )
+              enddo
+            enddo
+          enddo
+        enddo
+      enddo
+    enddo
+    p = zero
+
+    ! stencil -> the 8 stored diagonals (interior cells)
+    do i = 1,nx
+      do j = 1,ny
+        do k = 1,nz
+          cA(1,k,j,i) = A27(14      ,k,j,i)            ! ( 0, 0, 0)
+          cA(2,k,j,i) = A27(14-9    ,k,j,i)            ! (-1, 0, 0)  k-1
+          cA(3,k,j,i) = A27(14+9-3  ,k,j,i)            ! (+1,-1, 0)
+          cA(4,k,j,i) = A27(14-3    ,k,j,i)            ! ( 0,-1, 0)
+          cA(6,k,j,i) = A27(14+9-1  ,k,j,i)            ! (+1, 0,-1)
+          cA(7,k,j,i) = A27(14-1    ,k,j,i)            ! ( 0, 0,-1)
+          if (k >= 2) then
+            cA(5,k,j,i) = A27(14-9-3,k,j,i)            ! (-1,-1, 0)
+            cA(8,k,j,i) = A27(14-9-1,k,j,i)            ! (-1, 0,-1)
+          else
+            cA(5,k,j,i) = A27(14+3-1,k,j,i)            ! ( 0,+1,-1)  bottom xy
+            cA(8,k,j,i) = A27(14-3-1,k,j,i)            ! ( 0,-1,-1)  bottom xy
+          endif
+        enddo
+      enddo
+    enddo
+    ! halo-stored diagonals read by the interior rows (east, north, south)
+    do j = 1,ny
+      do k = 1,nz
+        cA(7,k,j,nx+1) = A27(14+1,k,j,nx)                     ! ( 0, 0,+1)
+        if (k >= 2) cA(6,k-1,j,nx+1) = A27(14-9+1,k,j,nx)     ! (-1, 0,+1)
+        if (k <= nz-1) cA(8,k+1,j,nx+1) = A27(14+9+1,k,j,nx)  ! (+1, 0,+1)
+      enddo
+      cA(5,1,j-1,nx+1) = A27(14-3+1,1,j,nx)                   ! ( 0,-1,+1)
+      cA(8,1,j+1,nx+1) = A27(14+3+1,1,j,nx)                   ! ( 0,+1,+1)
+    enddo
+    do i = 1,nx
+      do k = 1,nz
+        cA(4,k,ny+1,i) = A27(14+3,k,ny,i)                     ! ( 0,+1, 0)
+        if (k >= 2) cA(3,k-1,ny+1,i) = A27(14-9+3,k,ny,i)     ! (-1,+1, 0)
+        if (k <= nz-1) cA(5,k+1,ny+1,i) = A27(14+9+3,k,ny,i)  ! (+1,+1, 0)
+      enddo
+      cA(8,1,ny+1,i+1) = A27(14+3+1,1,ny,i)                   ! ( 0,+1,+1)
+      cA(5,1,0,i+1)    = A27(14-3+1,1,1,i)                    ! ( 0,-1,+1)
+    enddo
+
+    ! checks: (1) interior agreement with the formulas away from the
+    ! perimeter, (2) size of the coefficients outside the 15-point
+    ! pattern, (3) symmetry A(c,n) = A(n,c) for in-rank pairs
+    amax = maxval(abs(cA(1,1:nz,1:ny,1:nx)))
+    dint = zero;  dext = zero;  dsym = zero;  dnul = zero
+    do i = 1,nx
+      do j = 1,ny
+        do k = 1,nz
+          if (i>=3 .and. i<=nx-2 .and. j>=3 .and. j<=ny-2) then
+            dint = max(dint, maxval(abs(cA(1:8,k,j,i)-cAf(1:8,k,j,i))))
+          else
+            dext = max(dext, maxval(abs(cA(1:8,k,j,i)-cAf(1:8,k,j,i))))
+          endif
+          ! pattern: allowed offsets (dk,dj,di)
+          do m = 1,27
+            dk = (m-1)/9 - 1;  dj = mod((m-1)/3,3) - 1;  di = mod(m-1,3) - 1
+            if (dj/=0 .and. di/=0 .and. .not.(k==1 .and. dk==0)) dnul = max(dnul,abs(A27(m,k,j,i)))
+            if (dj/=0 .and. di/=0 .and. k==1 .and. dk/=0)       dnul = max(dnul,abs(A27(m,k,j,i)))
+            if (dk/=0 .and. dj/=0 .and. di/=0)                  dnul = max(dnul,abs(A27(m,k,j,i)))
+            ! symmetry with the reverse offset at the neighbour (in-rank)
+            if (k+dk>=1 .and. k+dk<=nz .and. j+dj>=1 .and. j+dj<=ny .and. i+di>=1 .and. i+di<=nx) &
+              dsym = max(dsym, abs(A27(m,k,j,i) - A27(28-m,k+dk,j+dj,i+di)))
+          enddo
+        enddo
+      enddo
+    enddo
+    lc = (/ dint, dext, dsym, dnul /)
+    call MPI_Allreduce(lc,gl,4,MPI_DOUBLE_PRECISION,MPI_MAX,MPI_COMM_WORLD,ierr)
+    lc(1) = amax
+    call MPI_Allreduce(lc(1),amax,1,MPI_DOUBLE_PRECISION,MPI_MAX,MPI_COMM_WORLD,ierr)
+    if (myrank==0) then
+       write(*,'(A)') '     masked stencil (fine grid):'
+       write(*,'(A,ES9.2,A,ES9.2,A)') '       max|num-formula| interior ', gl(1)/amax, &
+            '   near perimeter ', gl(2)/amax, '   (rel. to max|diag|)'
+       write(*,'(A,ES9.2,A,ES9.2)') '       symmetry defect ', gl(3)/amax, &
+            '   outside 15-point pattern ', gl(4)/amax
+    endif
+    if (gl(1)/amax > 1e-10_rp) then
+       if (myrank==0) write(*,*) 'assemble_masked_stencil: interior mismatch -- stopping'
+       call MPI_Abort(MPI_COMM_WORLD,1,ierr)
+    endif
+    deallocate(A27,cAf)
+
+  end subroutine assemble_masked_stencil
 
   !-------------------------------------------------------------------------     
   subroutine correction_uvw()
@@ -302,6 +491,20 @@ contains
           enddo
        enddo
     enddo
+
+    ! column masking: no pressure gradient through no-flux faces
+    if (allocated(umsk)) then
+       do i = 1,nx+1
+          do j = 0,ny+1
+             px(:,j,i) = px(:,j,i)*umsk(j,i)
+          enddo
+       enddo
+       do i = 0,nx+1
+          do j = 1,ny+1
+             py(:,j,i) = py(:,j,i)*vmsk(j,i)
+          enddo
+       enddo
+    endif
 
     do i = 0,nx+1
        do j = 0,ny+1
@@ -430,6 +633,20 @@ contains
           dw(k,j,i) = dw(k,j,i) * dirichlet_flag
        enddo
     enddo
+
+    ! row masking: no flux correction through no-flux faces
+    if (allocated(umsk)) then
+       do i = 1,nx+1
+          do j = 1,ny
+             du(:,j,i) = du(:,j,i)*umsk(j,i)
+          enddo
+       enddo
+       do i = 1,nx
+          do j = 1,ny+1
+             dv(:,j,i) = dv(:,j,i)*vmsk(j,i)
+          enddo
+       enddo
+    endif
 
   end subroutine correction_uvw
 

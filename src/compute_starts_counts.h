@@ -48,9 +48,6 @@
       if (WESTERN_MPI_EDGE) then
         imin=imin + iwest-1       !<-- to account for grid type
       else
-# ifndef PARALLEL_FILES
-        start(1)=1+iSW_corn + 1-imin
-# endif
         imin=iwest
       endif
       if (EASTERN_MPI_EDGE) then
@@ -61,9 +58,6 @@
       if (SOUTHERN_MPI_EDGE) then
         jmin=jmin + jsouth-1
       else
-# ifndef PARALLEL_FILES
-        start(2)=1+jSW_corn + 1-jmin
-# endif
         jmin=jsouth
       endif
       if (NORTHERN_MPI_EDGE) then
@@ -72,7 +66,7 @@
         jmax=jnorth
       endif
 #else                        /* non-MPI --> */
-      imax=Lm+1 ; jmax=Mm+1
+      imax=nx+1 ; jmax=ny+1
 #endif
       count(1)=imax-imin+1
       count(2)=jmax-jmin+1

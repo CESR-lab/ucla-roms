@@ -27,6 +27,7 @@
       subroutine start_timers
 
       use param
+      use dimensions
       use comm_vars
       use scalars
 
@@ -59,7 +60,7 @@ C$OMP CRITICAL (start_timers_cr_rgn)
 # else
         write(*,'(/3(1x,A,I3),4x,2(A,I4),A,I3)')
      &       'NUMBER OF THREADS:',     numthreads,     'TILING:',
-     &        NSUB_X,'x',NSUB_E, 'GRID SIZE:', Lm,' x',Mm,' x',N
+     &        NSUB_X,'x',NSUB_E, 'GRID SIZE:', nx,' x',ny,' x',N
 # endif
       endif
       trd_count=trd_count+1
@@ -83,6 +84,7 @@ C$OMP END CRITICAL (start_timers_cr_rgn)
       subroutine stop_timers()            ! Finalize timing
 
       use param
+      use dimensions
       use comm_vars
       use scalars
 
@@ -182,12 +184,13 @@ C$OMP END CRITICAL(trap_cr_rgn)
                                        ! These are stub-routines for
       subroutine start_timers          ! compatibility with compilers
       use param
+      use dimensions
       use scalars
       implicit none                    ! without OpenMP support.
 
       mpi_master_only write(*,'(/2(1x,A,I3),4x,2(1x,A,I4)/)')
      &                        'BLOCKING:', NSUB_X, 'x', NSUB_E,
-     &                        'HORIZ. GRID SIZE:', Lm, 'x', Mm
+     &                        'HORIZ. GRID SIZE:', nx, 'x', ny
       end
 
       subroutine stop_timers()

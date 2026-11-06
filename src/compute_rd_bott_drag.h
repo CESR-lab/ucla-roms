@@ -1,7 +1,7 @@
 #ifndef LINEAR_DRAG_ONLY
         if (Zob > 0.) then
-          do j=jstrV-1,jend
-            do i=istrU-1,iend
+          do j=0,ny
+            do i=0,nx
 # define nrdg nstp
               cff=sqrt( 0.333333333333*(
      &              u(i,j,1,nrdg)**2 +u(i+1,j,1,nrdg)**2
@@ -53,20 +53,13 @@ c             rd(i,j)=rdrg+cff*( vonKar/log(1.+0.5*Hz(i,j,1)/Zob) )**2
 # endif
 
 
-# if !defined IMPLICIT_BOTTOM_DRAG
-#  if !defined IMPLCT_NO_SLIP_BTTM_BC
-                                                     ! must have
-              rd(i,j)=min(rd(i,j), 0.8*Hz(i,j,1)/dt) ! restriction
-                                                     ! for stability
-#  endif
-# endif
             enddo
           enddo
         else  !<-- Zob > 0.
 #endif /* ! LINEAR_DRAG_ONLY */
 
-          do j=jstrV-1,jend
-            do i=istrU-1,iend
+          do j=0,ny
+            do i=0,nx
               rd(i,j)=rdrg
 
               rd(i,j)=min(rd(i,j), 0.8*Hz(i,j,1)/dt)
@@ -85,5 +78,6 @@ c             rd(i,j)=rdrg+cff*( vonKar/log(1.+0.5*Hz(i,j,1)/Zob) )**2
 ! rows into its periodic and/or computational margins, so there is no
 ! need for exchange call.
 
-        call ext_copy_prv2shr_2d_tile(istr,iend,jstr,jend, rd,r_D)
+!       call ext_copy_prv2shr_2d_tile(istr,iend,jstr,jend, rd,r_D)
+        r_D = rd
 

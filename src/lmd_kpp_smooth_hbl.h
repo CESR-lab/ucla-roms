@@ -29,75 +29,63 @@
 
       cff=1.D0/12.D0 ; cff1=3.D0/16.D0
 
-#  ifndef EW_PERIODIC
-      if (WESTERN_EDGE) then
-        do j=J_EXT_RANGE
-          wrk(istr-1,j)=wrk(istr,j)
+      if (west_bnd) then
+        do j=0,ny+1
+          wrk(0,j)=wrk(1,j)
         enddo
       endif
-      if (EASTERN_EDGE) then
-        do j=J_EXT_RANGE
-          wrk(iend+1,j)=wrk(iend,j)
+      if (east_bnd) then
+        do j=0,ny+1
+          wrk(nx+1,j)=wrk(nx,j)
         enddo
       endif
-#  endif
-#  ifndef NS_PERIODIC
-      if (SOUTHERN_EDGE) then
-        do i=I_EXT_RANGE
-          wrk(i,jstr-1)=wrk(i,jstr)
+      if (south_bnd) then
+        do i=0,nx+1
+          wrk(i,0)=wrk(i,1)
         enddo
       endif
-      if (NORTHERN_EDGE) then
-        do i=I_EXT_RANGE
-          wrk(i,jend+1)=wrk(i,jend)
+      if (north_bnd) then
+        do i=0,nx+1
+          wrk(i,ny+1)=wrk(i,ny)
         enddo
       endif
-#   ifndef EW_PERIODIC
-      if (WESTERN_EDGE .and. SOUTHERN_EDGE) then
-        wrk(istr-1,jstr-1)=wrk(istr,jstr)
+      if (west_bnd .and. south_bnd) then
+        wrk(0,0)=wrk(1,1)
       endif
-      if (WESTERN_EDGE .and. NORTHERN_EDGE) then
-        wrk(istr-1,jend+1)=wrk(istr,jend)
+      if (west_bnd .and. north_bnd) then
+        wrk(0,ny+1)=wrk(1,ny)
       endif
-      if (EASTERN_EDGE .and. SOUTHERN_EDGE) then
-        wrk(iend+1,jstr-1)=wrk(iend,jstr)
+      if (east_bnd .and. south_bnd) then
+        wrk(nx+1,0)=wrk(nx,1)
       endif
-      if (EASTERN_EDGE .and. NORTHERN_EDGE) then
-        wrk(iend+1,jend+1)=wrk(iend,jend)
+      if (east_bnd .and. north_bnd) then
+        wrk(nx+1,ny+1)=wrk(nx,ny)
       endif
-#   endif
-#  endif
 
-      do j=jstr-1,jend+1                 ! The smoothing isotropy is
-        do i=istr,iend+1                 ! achieved by computing masked
+      do j=0,ny+1                 ! The smoothing isotropy is
+        do i=1,nx+1                 ! achieved by computing masked
           FX(i,j)=(wrk(i,j)-wrk(i-1,j))  ! elementary differences in
-#  ifdef MASKING
      &                      *umask(i,j)  ! each direction first, then
-#  endif
         enddo                            ! adding transversal terms
       enddo                              ! expressed via the very same
-      do j=jstr,jend+1                   ! differences.
-        do i=istr-1,iend+1
+      do j=1,ny+1                   ! differences.
+        do i=0,nx+1
           FE1(i,j)=(wrk(i,j)-wrk(i,j-1))
-#  ifdef MASKING
      &                      *vmask(i,j)
-#  endif
         enddo
-        do i=istr,iend
+        do i=1,nx
           FE(i,j)=FE1(i,j) + cff*( FX(i+1,j)+FX(i  ,j-1)
      &                            -FX(i  ,j)-FX(i+1,j-1))
         enddo
       enddo
-      do j=jstr,jend
-        do i=istr,iend+1
+      do j=1,ny
+        do i=1,nx+1
           FX(i,j)=FX(i,j) + cff*( FE1(i,j+1)+FE1(i-1,j  )
      &                           -FE1(i,j  )-FE1(i-1,j+1))
         enddo
-        do i=istr,iend
+        do i=1,nx
           wrk(i,j)=wrk(i,j) + cff1*( FX(i+1,j)-FX(i,j)
      &                              +FE(i,j+1)-FE(i,j))
-#  ifdef MASKING
           wrk(i,j)=wrk(i,j)*rmask(i,j)
-#  endif
         enddo
       enddo              !--> discard FX,FE,FE1

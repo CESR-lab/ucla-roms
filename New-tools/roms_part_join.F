@@ -276,6 +276,9 @@
         enddo
       enddo
       nparts = count
+      ierr = nf90_open('part.nc',nf90_write,ncid)
+      ncwrite(ncid,'p',node_map)
+      ierr = nf90_close(ncid)
 
       deallocate(iloc,jloc,node_map,npi_c,npj_c)
 
